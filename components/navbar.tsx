@@ -10,7 +10,7 @@ export async function Navbar() {
       <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-8">
         {/* if no user: landing page or login; if user: dashboard */}
         <Link 
-          href={user ? "/dashboard" : "/"} 
+          href={user ? "/dashboard" : "/auth/login"} 
           className="text-xl font-bold tracking-tight"
         >
           SlugShare
