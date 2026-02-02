@@ -10,6 +10,18 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Verify user exists in database
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+    });
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: "User not found in database" },
+        { status: 404 }
+      );
+    }
+
     // Get or create points record
     const points = await prisma.points.upsert({
       where: { userId: user.id },
@@ -21,8 +33,17 @@ export async function GET() {
     });
 
     return NextResponse.json({ balance: points.balance });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching points:", error);
+    
+    // Handle foreign key constraint violation
+    if (error.code === "P2003") {
+      return NextResponse.json(
+        { error: "User not found in database" },
+        { status: 404 }
+      );
+    }
+    
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -48,6 +69,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify user exists in database
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+    });
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: "User not found in database" },
+        { status: 404 }
+      );
+    }
+
     // Update or create points record
     const points = await prisma.points.upsert({
       where: { userId: user.id },
@@ -59,8 +92,17 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ balance: points.balance });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating points:", error);
+    
+    // Handle foreign key constraint violation
+    if (error.code === "P2003") {
+      return NextResponse.json(
+        { error: "User not found in database" },
+        { status: 404 }
+      );
+    }
+    
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

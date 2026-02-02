@@ -302,7 +302,7 @@ export default function RequestsPage() {
                             </p>
                           )}
 
-                          // Added delete button functionality to page.tsx starts here //
+                          {/* `// Added delete button functionality to page.tsx starts here //` */}
                           {/* Only show the delete button if the request is still pending
                           Once a request is accepted or declined it cant be deleted */}
                           {request.status === "pending" && (
@@ -319,7 +319,7 @@ export default function RequestsPage() {
                               </Button>
                             </div>
                           )}
-                          // Added delete button functionality to page.tsx ends here //
+                          {/* // Added delete button functionality to page.tsx ends here // */}
                           <p className="text-xs text-muted-foreground">
                             Created {new Date(request.createdAt).toLocaleString()}
                           </p>
