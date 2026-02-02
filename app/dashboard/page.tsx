@@ -1,5 +1,4 @@
 import { getCurrentUser } from "@/lib/auth";
-import { signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { UpdatePointsForm } from "@/components/UpdatePointsForm";
@@ -35,16 +35,6 @@ export default async function DashboardPage() {
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/auth/login" });
-            }}
-          >
-            <Button type="submit" variant="destructive">
-              Sign out
-            </Button>
-          </form>
         </div>
 
         <div className="mb-6 grid gap-6 md:grid-cols-2">
