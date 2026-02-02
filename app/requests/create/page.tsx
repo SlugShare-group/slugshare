@@ -13,7 +13,33 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { UCSC_LOCATIONS } from "@/lib/locations";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import Link from "next/link";
+import { Check } from "lucide-react";
+
+const LOCATIONS = [
+  {
+    category: "Dining Halls",
+    items: ["Cowell & Stevenson", "Crown & Merrill", "Porter & Kresge", "Rachel Carson & Oakes", "College Nine & John R. Lewis"],
+  },
+  {
+    category: "Markets",
+    items: ["Porter Market", "Merrill Market"],
+  },
+  {
+    category: "Perks Coffee Bar",
+    items: ["Physical Sciences", "Earth and Marine", "Baskin Engineering"],
+  },
+  {
+    category: "Cafes and restaurants",
+    items: ["Banana Joe’s Late Night", "Global Village Cafe", "Oakes Cafe", "Stevenson Coffee House", "University Center Cafe", "Owl’s Nest", "University Center Bistro"],
+  },
+];
 
 export default function CreateRequestPage() {
   const router = useRouter();
@@ -103,7 +129,7 @@ export default function CreateRequestPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
-                <select
+                {/* <select
                   id="location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
@@ -116,7 +142,43 @@ export default function CreateRequestPage() {
                       {loc}
                     </option>
                   ))}
-                </select>
+                </select> */}
+                <Label>Location</Label>
+  
+                {/* Visual confirmation of current selection */}
+                {location && (
+                  <div className="text-sm font-medium text-green-600 flex items-center gap-1 bg-green-50 p-2 rounded-md border border-green-200">
+                    <Check className="h-4 w-4" /> Selected: {location}
+                  </div>
+                )}
+                
+                <Accordion type="single" collapsible className="w-full border rounded-md px-4">
+                  {LOCATIONS.map((group) => (
+                    <AccordionItem key={group.category} value={group.category} className="border-b-0">
+                      <AccordionTrigger className="text-sm hover:no-underline py-3">
+                        {group.category}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-1 gap-2 pb-2">
+                          {group.items.map((item) => (
+                            <button
+                              key={item}
+                              type="button" // Prevents accidental form submission
+                              onClick={() => setLocation(item)}
+                              className={`text-left p-2 text-sm rounded-md transition-colors border ${
+                                location === item 
+                                  ? "bg-primary text-primary-foreground border-primary font-medium" 
+                                  : "hover:bg-muted border-transparent"
+                              }`}
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               </div>
 
               <div className="space-y-2">
