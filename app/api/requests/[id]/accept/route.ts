@@ -24,6 +24,13 @@ export async function POST(
       },
     });
 
+    if (!request) {
+      return NextResponse.json(
+        { error: "Request not found" },
+        { status: 404 }
+      );
+    }
+
     // Get or create donor's points
     const donorPoints = await prisma.points.upsert({
       where: { userId: user.id },
@@ -53,7 +60,7 @@ export async function POST(
       },
     });
 
-    // Perform atomic transaction: transfer points and update request
+    // Perform atomic transaction: transfer points, update request, and create notification
     await prisma.$transaction([
       // Decrease donor's balance
       prisma.points.update({
@@ -79,6 +86,15 @@ export async function POST(
         data: {
           status: "accepted",
           donorId: user.id,
+        },
+      }),
+      // Create notification for requester
+      prisma.notification.create({
+        data: {
+          userId: request.requesterId,
+          type: "request_accepted",
+          message: `${user.name || user.email} accepted your request for ${request.pointsRequested} points at ${request.location}`,
+          read: false,
         },
       }),
     ]);
