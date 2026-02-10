@@ -31,7 +31,7 @@ type UnavailableState = {
 
 type ScanState = ActiveState | CompletedState | UnavailableState;
 
-const DEFAULT_REFRESH_MS = 10_000;
+const DEFAULT_REFRESH_MS = 5_000;
 
 const reasonLabels: Record<UnavailableState["reason"], string> = {
   not_code_mode: "This request does not use code fulfillment.",
@@ -68,9 +68,15 @@ export default function ScanPageClient({ requestId }: { requestId: string }) {
 
   useEffect(() => {
     fetchScanState();
-    const timer = setInterval(fetchScanState, DEFAULT_REFRESH_MS);
-    return () => clearInterval(timer);
   }, [fetchScanState]);
+
+  const pollIntervalMs =
+    scanState?.state === "active" ? scanState.refreshMs : DEFAULT_REFRESH_MS;
+
+  useEffect(() => {
+    const timer = setInterval(fetchScanState, pollIntervalMs);
+    return () => clearInterval(timer);
+  }, [fetchScanState, pollIntervalMs]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -107,7 +113,7 @@ export default function ScanPageClient({ requestId }: { requestId: string }) {
           <CardHeader>
             <CardTitle>Temporary Scan Code</CardTitle>
             <CardDescription>
-              This code refreshes automatically every 10 seconds.
+              This code refreshes automatically every 5 seconds.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

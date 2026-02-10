@@ -91,7 +91,7 @@ describe("GET /api/requests/[id]/scan", () => {
     const data = await res.json();
     expect(data.state).toBe("active");
     expect(data.payload).toBe("payload-abc");
-    expect(data.refreshMs).toBe(10000);
+    expect(data.refreshMs).toBe(5000);
   });
 
   it("auto-completes after first transaction record", async () => {

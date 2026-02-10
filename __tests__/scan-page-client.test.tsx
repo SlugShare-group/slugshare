@@ -30,7 +30,7 @@ describe("ScanPageClient", () => {
             state: "active",
             payload: "payload-1",
             expiresAt: new Date(Date.now() + 60_000).toISOString(),
-            refreshMs: 10000,
+            refreshMs: 5000,
           }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         )

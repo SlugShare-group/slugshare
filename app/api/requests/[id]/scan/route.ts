@@ -10,7 +10,7 @@ import {
 } from "@/lib/get-client";
 
 const CODE_EXPIRY_MS = 15 * 60 * 1000;
-const REFRESH_MS = 10_000;
+const REFRESH_MS = 5_000;
 
 export async function GET(
   _request: Request,
