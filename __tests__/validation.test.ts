@@ -3,6 +3,7 @@ import {
   validateCreateRequest,
   validateDeleteRequest,
   validateAcceptRequest,
+  validateFulfillmentModeOverride,
 } from "@/lib/validation";
 
 describe("validateCreateRequest", () => {
@@ -161,6 +162,18 @@ describe("validateDeleteRequest", () => {
       status: 400,
     });
   });
+
+  it("rejects deleting completed request", () => {
+    const result = validateDeleteRequest(
+      { requesterId: userId, status: "completed" },
+      userId
+    );
+    expect(result).toEqual({
+      valid: false,
+      error: "You can only delete pending requests",
+      status: 400,
+    });
+  });
 });
 
 describe("validateAcceptRequest", () => {
@@ -233,6 +246,19 @@ describe("validateAcceptRequest", () => {
     });
   });
 
+  it("rejects accepting completed request", () => {
+    const result = validateAcceptRequest(
+      { requesterId, status: "completed", pointsRequested: 5 },
+      donorId,
+      10
+    );
+    expect(result).toEqual({
+      valid: false,
+      error: "Request is no longer pending",
+      status: 400,
+    });
+  });
+
   it("rejects when donor has insufficient balance", () => {
     const result = validateAcceptRequest(
       { requesterId, status: "pending", pointsRequested: 15 },
@@ -255,6 +281,27 @@ describe("validateAcceptRequest", () => {
     expect(result).toEqual({
       valid: false,
       error: "Insufficient points balance",
+      status: 400,
+    });
+  });
+});
+
+describe("validateFulfillmentModeOverride", () => {
+  it("accepts undefined mode", () => {
+    const result = validateFulfillmentModeOverride(undefined);
+    expect(result).toEqual({ valid: true });
+  });
+
+  it("accepts a valid fulfillment mode", () => {
+    const result = validateFulfillmentModeOverride("CODE_ONLY");
+    expect(result).toEqual({ valid: true, mode: "CODE_ONLY" });
+  });
+
+  it("rejects invalid mode", () => {
+    const result = validateFulfillmentModeOverride("INVALID_MODE");
+    expect(result).toEqual({
+      valid: false,
+      error: "Invalid fulfillment mode",
       status: 400,
     });
   });

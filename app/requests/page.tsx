@@ -11,6 +11,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
+import {
+  FULFILLMENT_MODES,
+  FULFILLMENT_MODE_LABELS,
+  type FulfillmentMode,
+  isCodeFulfillmentMode,
+  isFulfillmentMode,
+} from "@/lib/fulfillment";
 
 interface Request {
   id: string;
@@ -19,7 +26,12 @@ interface Request {
   location: string;
   pointsRequested: number;
   status: string;
+  fulfillmentMode: string | null;
   message: string | null;
+  codeIssuedAt: string | null;
+  codeExpiresAt: string | null;
+  completedAt: string | null;
+  completionTrigger: string | null;
   createdAt: string;
   updatedAt: string;
   requester: {
@@ -41,10 +53,15 @@ export default function RequestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [defaultFulfillmentMode, setDefaultFulfillmentMode] =
+    useState<FulfillmentMode>("CODE_ONLY");
+  const [modeOverrides, setModeOverrides] = useState<
+    Record<string, FulfillmentMode | "">
+  >({});
 
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([fetchCurrentUser(), fetchRequests()]);
+      await Promise.all([fetchCurrentUser(), fetchRequests(), fetchGetSettings()]);
     };
     loadData();
   }, []);
@@ -58,6 +75,19 @@ export default function RequestsPage() {
       }
     } catch (error) {
       console.error("Error fetching current user:", error);
+    }
+  };
+
+  const fetchGetSettings = async () => {
+    try {
+      const response = await fetch("/api/get");
+      if (!response.ok) return;
+      const data = await response.json();
+      if (isFulfillmentMode(data.defaultFulfillmentMode)) {
+        setDefaultFulfillmentMode(data.defaultFulfillmentMode);
+      }
+    } catch (settingsError) {
+      console.error("Error fetching GET settings:", settingsError);
     }
   };
 
@@ -85,13 +115,22 @@ export default function RequestsPage() {
     }
   };
 
-  const handleAccept = async (requestId: string) => {
+  const handleAccept = async (
+    requestId: string,
+    fulfillmentModeOverride?: FulfillmentMode
+  ) => {
     if (processingId) return;
 
     try {
       setProcessingId(requestId);
       const response = await fetch(`/api/requests/${requestId}/accept`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fulfillmentModeOverride,
+        }),
       });
 
       const data = await response.json();
@@ -197,10 +236,15 @@ export default function RequestsPage() {
         return "text-green-600";
       case "declined":
         return "text-red-600";
+      case "completed":
+        return "text-blue-600";
       default:
         return "text-yellow-600";
     }
   };
+
+  const getModeLabel = (mode: string | null) =>
+    isFulfillmentMode(mode) ? FULFILLMENT_MODE_LABELS[mode] : "Not set";
 
   // Separate user's own requests from others' requests
   const myRequests = currentUserId
@@ -290,6 +334,12 @@ export default function RequestsPage() {
                             </div>
                           )}
 
+                          {request.fulfillmentMode && (
+                            <p className="text-sm text-muted-foreground">
+                              Fulfillment: {getModeLabel(request.fulfillmentMode)}
+                            </p>
+                          )}
+
                           {request.status === "accepted" && request.donor && (
                             <p className="text-sm text-muted-foreground">
                               Accepted by {request.donor.name || request.donor.email}
@@ -301,6 +351,19 @@ export default function RequestsPage() {
                               Declined by {request.donor.name || request.donor.email}
                             </p>
                           )}
+
+                          {request.status === "completed" && request.completedAt && (
+                            <p className="text-sm text-muted-foreground">
+                              Completed {new Date(request.completedAt).toLocaleString()}
+                            </p>
+                          )}
+
+                          {request.status === "accepted" &&
+                            isCodeFulfillmentMode(request.fulfillmentMode) && (
+                              <Button asChild size="sm" variant="outline">
+                                <Link href={`/scan/${request.id}`}>Open Scan Code</Link>
+                              </Button>
+                            )}
 
                          {/* Added delete button functionality to page.tsx starts here */}
                           {/* Only show the delete button if the request is still pending
@@ -379,10 +442,44 @@ export default function RequestsPage() {
                       </div>
                     )}
 
+                    {request.fulfillmentMode && (
+                      <p className="text-sm text-muted-foreground">
+                        Fulfillment: {getModeLabel(request.fulfillmentMode)}
+                      </p>
+                    )}
+
                     {request.status === "pending" && (
-                      <div className="flex gap-2">
+                      <div className="space-y-2">
+                        <select
+                          value={modeOverrides[request.id] || ""}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setModeOverrides((prev) => ({
+                              ...prev,
+                              [request.id]: isFulfillmentMode(value)
+                                ? value
+                                : "",
+                            }));
+                          }}
+                          className="flex h-8 w-full rounded-md border border-input bg-transparent px-2 text-sm shadow-xs transition-colors outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                        >
+                          <option value="">
+                            Use default ({FULFILLMENT_MODE_LABELS[defaultFulfillmentMode]})
+                          </option>
+                          {FULFILLMENT_MODES.map((mode) => (
+                            <option key={mode} value={mode}>
+                              {FULFILLMENT_MODE_LABELS[mode]}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="flex gap-2">
                         <Button
-                          onClick={() => handleAccept(request.id)}
+                          onClick={() =>
+                            handleAccept(
+                              request.id,
+                              modeOverrides[request.id] || undefined
+                            )
+                          }
                           disabled={processingId === request.id}
                           size="sm"
                         >
@@ -396,12 +493,19 @@ export default function RequestsPage() {
                         >
                           Decline
                         </Button>
+                        </div>
                       </div>
                     )}
 
                     {request.status === "accepted" && request.donor && (
                       <p className="text-sm text-muted-foreground">
                         Accepted by {request.donor.name || request.donor.email}
+                      </p>
+                    )}
+
+                    {request.status === "completed" && request.completedAt && (
+                      <p className="text-sm text-muted-foreground">
+                        Completed {new Date(request.completedAt).toLocaleString()}
                       </p>
                     )}
 
@@ -421,4 +525,3 @@ export default function RequestsPage() {
     </div>
   );
 }
-

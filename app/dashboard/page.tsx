@@ -12,6 +12,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { UpdatePointsForm } from "@/components/UpdatePointsForm";
+import { GetConnectionForm } from "@/components/GetConnectionForm";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -79,6 +80,19 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>GET Code Fulfillment</CardTitle>
+            <CardDescription>
+              Connect your GET account to issue temporary scan codes when you
+              accept requests.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GetConnectionForm />
+          </CardContent>
+        </Card>
+
         <div className="flex gap-4">
           <Button asChild>
             <Link href="/requests/create">Create Request</Link>
@@ -94,4 +108,3 @@ export default async function DashboardPage() {
     </div>
   );
 }
-

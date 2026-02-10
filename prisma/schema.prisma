@@ -16,12 +16,14 @@ model User {
   email         String         @unique
   emailVerified DateTime?
   phone         String?
+  defaultFulfillmentMode String @default("CODE_ONLY")
   image         String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   accounts      Account[]
   sessions      Session[]
   points        Points?
+  getCredential GetCredential?
   requests      Request[]      @relation("Requester")
   donations     Request[]      @relation("Donor")
   notifications Notification[]
@@ -79,11 +81,27 @@ model Request {
   location       String
   pointsRequested Int
   status         String   @default("pending") // pending, accepted, declined
+  fulfillmentMode String?
   message        String?
+  codeIssuedAt   DateTime?
+  codeExpiresAt  DateTime?
+  completedAt    DateTime?
+  completionTrigger String?
   requester      User     @relation("Requester", fields: [requesterId], references: [id])
   donor          User?    @relation("Donor", fields: [donorId], references: [id])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model GetCredential {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  encryptedDeviceId String
+  encryptedPin      String
+  lastValidatedAt   DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Notification model

@@ -41,6 +41,9 @@ AUTH_SECRET="your-secret-key-here"
 # Google OAuth (for Google sign-in)
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# 32-byte base64 key used to encrypt stored GET credentials
+GET_CREDENTIALS_ENCRYPTION_KEY="base64-encoded-32-byte-key"
 ```
 
 **Optional Environment Variables:**
@@ -62,6 +65,14 @@ openssl rand -base64 32
 ```
 
 Copy the output and add it to your `.env` file.
+
+### 4a. Generate GET Encryption Key
+
+To generate `GET_CREDENTIALS_ENCRYPTION_KEY`, run:
+
+```bash
+openssl rand -base64 32
+```
 
 ### 5. Database Setup
 
@@ -178,6 +189,7 @@ webserver/
 - `/dashboard` - Protected dashboard (shows points balance)
 - `/requests` - All requests page (My Requests + Other Requests)
 - `/requests/create` - Create new request page
+- `/scan/[id]` - Request-specific temporary scan code page
 
 ### API Routes
 - `/api/auth/*` - NextAuth.js authentication routes
@@ -185,6 +197,8 @@ webserver/
 - `/api/requests` - GET (all requests), POST (create request)
 - `/api/requests/[id]/accept` - POST (accept request and transfer points)
 - `/api/requests/[id]/decline` - POST (decline request)
+- `/api/requests/[id]/scan` - GET (retrieve temporary scan code state + payload)
+- `/api/get` - GET/POST/PATCH/DELETE (manage GET account connection and fulfillment defaults)
 - `/api/user` - GET (current user info)
 
 ## Database Schema

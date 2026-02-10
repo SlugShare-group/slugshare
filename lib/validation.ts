@@ -1,3 +1,5 @@
+import { isFulfillmentMode, type FulfillmentMode } from "@/lib/fulfillment";
+
 export type ValidationResult =
   | { valid: true }
   | { valid: false; error: string; status: number };
@@ -88,4 +90,26 @@ export function validateAcceptRequest(
   }
 
   return { valid: true };
+}
+
+export type FulfillmentModeValidationResult =
+  | { valid: true; mode?: FulfillmentMode }
+  | { valid: false; error: string; status: number };
+
+export function validateFulfillmentModeOverride(
+  mode: unknown
+): FulfillmentModeValidationResult {
+  if (typeof mode === "undefined") {
+    return { valid: true };
+  }
+
+  if (!isFulfillmentMode(mode)) {
+    return {
+      valid: false,
+      error: "Invalid fulfillment mode",
+      status: 400,
+    };
+  }
+
+  return { valid: true, mode };
 }
