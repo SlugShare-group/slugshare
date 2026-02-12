@@ -155,56 +155,56 @@ export default function RequestsPage() {
     }
   };
 
-  // Page.tsx delete function starts here ////
-  // This function is called when the user clicks the Delete button on one of their requests //
-  // requestId is The unique ID of the request to delete
+  /* Page.tsx delete function starts here */
+  /* This function is called when the user clicks the Delete button on one of their requests */
+  /* requestId is the unique ID of the request to delete */
   const handleDelete = async (requestId: string) => {
-    // stops multiple delete operations from happening at the same time
-    // If ther is already a delete being processed then dont start another one
+    /* Stops multiple delete operations from happening at the same time */
+    /* If there is already a delete being processed then don't start another one */
     if (processingId) return;
 
-    // Show popup asking the user if theyre sure
-    // If they click "Cancel", confirm() returns false and exit
+    /* Show popup asking the user if they're sure */
+    /* If they click "Cancel", confirm() returns false and exit */
     if (!confirm("Are you sure you want to delete this request?")) {
-      return; // User cancelled, so we stop here
+      return; /* User cancelled, so we stop here */
     }
 
     try {
-      // Mark this request as being processed and shows "Deleting" on the button
+      /* Mark this request as being processed and shows "Deleting" on the button */
       setProcessingId(requestId);
 
-      // Send a DELETE request to our API endpoint
-      // This calls the DELETE function in app/api/requests/[id]/route.ts
+      /* Send a DELETE request to our API endpoint */
+      /* This calls the DELETE function in app/api/requests/[id]/route.ts */
       const response = await fetch(`/api/requests/${requestId}`, {
-        method: "DELETE", // HTTP method tells the server we want to delete
+        method: "DELETE", /* HTTP method tells the server we want to delete */
       });
 
-      // Parse the JSON response from the server
+      /* Parse the JSON response from the server */
       const data = await response.json();
 
-      // Check if the server returned an error
-      // response.ok is true if status code is 200-299, false otherwise
+      /* Check if the server returned an error */
+      /* response.ok is true if status code is 200-299, false otherwise */
       if (!response.ok) {
-        // Show the error message from the server
+        /* Show the error message from the server */
         alert(data.error || "Failed to delete request");
-        return; // Stop here if there was an error
+        return; /* Stop here if there was an error */
       }
 
-      // If we get here then delete was successful
-      // refresh list of requests to show updated data
-      await fetchRequests(); // Re-fetch all requests from the API
-      router.refresh(); // Tell Next.js to refresh the page data
+      /* If we get here then delete was successful */
+      /* Refresh list of requests to show updated data */
+      await fetchRequests(); /* Re-fetch all requests from the API */
+      router.refresh(); /* Tell Next.js to refresh the page data */
     } catch (error) {
-      // If something unexpected goes wrong
+      /* If something unexpected goes wrong */
       console.error("Error deleting request:", error);
       alert("An error occurred. Please try again.");
     } finally {
-      // run this code whether the delete succeeded or failed
-      // Clear the processing state so the button goes back to normal
+      /* Run this code whether the delete succeeded or failed */
+      /* Clear the processing state so the button goes back to normal */
       setProcessingId(null);
     }
   };
-  // page.tsx delete function ends here ////
+  /* Page.tsx delete function ends here */
 
 
   const getStatusColor = (status: string) => {
@@ -429,7 +429,7 @@ export default function RequestsPage() {
                             </p>
                           )}
 
-                          // Added delete button functionality to page.tsx starts here //
+                         {/* Added delete button functionality to page.tsx starts here */}
                           {/* Only show the delete button if the request is still pending
                           Once a request is accepted or declined it cant be deleted */}
                           {request.status === "pending" && (
@@ -446,7 +446,7 @@ export default function RequestsPage() {
                               </Button>
                             </div>
                           )}
-                          // Added delete button functionality to page.tsx ends here //
+                         {/* Added delete button functionality to page.tsx ends here */}
                           <p className="text-xs text-muted-foreground">
                             Created {new Date(request.createdAt).toLocaleString()}
                           </p>
@@ -548,4 +548,3 @@ export default function RequestsPage() {
     </div>
   );
 }
-
