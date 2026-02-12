@@ -10,7 +10,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+//Import dropdown functionality to use for fitler apply function
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input"; //used for entering the maximum donation amount
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react"; 
+import { UCSC_LOCATIONS } from "@/lib/locations"; //all available dining locations
 
 interface Request {
   id: string;
@@ -41,6 +54,9 @@ export default function RequestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
+  // filters requests based on locations and max amount willing to donate
+  const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
+  const [maxDonation, setMaxDonation] = useState<string>("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -210,6 +226,43 @@ export default function RequestsPage() {
     ? requests.filter((req) => req.requesterId !== currentUserId)
     : requests;
 
+  // Apply location filter: if any locations selected, only show those; otherwise show all
+  const locationFilter = (req: Request) =>
+    selectedLocations.size === 0 || selectedLocations.has(req.location);
+  // This converts the maxdonation input string into a number, if the input is empty it gets treated as "no limit"
+  const maxDonationNum = maxDonation === "" ? null : parseInt(maxDonation, 10);
+  //Checks if the max donation value is valid, so if it exists, is a number and is not negative
+  const maxDonationValid =
+    maxDonationNum !== null && !Number.isNaN(maxDonationNum) && maxDonationNum >= 0;
+  //Applies the locaiton filter to the current users own reuqest
+  const filteredMyRequests = myRequests.filter(locationFilter);
+  //applies the filters to the other users requests
+  const filteredOtherRequests = otherRequests.filter((req) => {
+    //excludes the ruequests that dont match the selected location
+    if (!locationFilter(req)) return false;
+    //if max donation is set, exclude requests that ask for more points than allowed
+    if (maxDonationValid && req.pointsRequested > maxDonationNum!) return false;
+    //If all checks pass, include this reuqest
+    return true;
+  });
+
+  //Toggles a location on or off in the dropdown menu (selectedLocations) set
+  const toggleLocation = (location: string) => {
+    setSelectedLocations((prev) => {
+      //Creates a new set so React detects the state change
+      const next = new Set(prev);
+      //If the location is already selected, then remove it, otherwise add it
+      if (next.has(location)) next.delete(location);
+      else next.add(location);
+      return next;
+    });
+  };
+  //Clears the filters by resetting the location selecations and max donation input
+  const clearFilters = () => {
+    setSelectedLocations(new Set()); //reset selected locations
+    setMaxDonation(""); //reset max don
+  };
+
   // Debug logging
   console.log("Debug info:", {
     currentUserId,
@@ -238,7 +291,81 @@ export default function RequestsPage() {
           </div>
         </div>
 
-        <h1 className="mb-6 text-3xl font-bold">All Requests</h1>
+
+        <div className="mb-6 flex flex-wrap items-center gap-4"> {/*Page header and filter controls container*/}
+
+          <h1 className="text-3xl font-bold">All Requests</h1>{/*Page title*/}
+          {/*dropdown menu that contains all filter options*/}
+          <DropdownMenu>
+            {/*button that opens the filter dropdown*/}
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                Filters
+                {/*indicator shown when any filter is active*/}
+                {(selectedLocations.size > 0 || maxDonation !== "") && (
+                  <span className="ml-1 size-2 rounded-full bg-primary" aria-hidden />
+                )}
+                {/*arrow icon indicating dropdown*/}
+                <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            {/*dropdown menu content*/}
+            <DropdownMenuContent align="start" className="w-72 p-0">
+              {/*dropdown header*/}
+              <div className="border-b px-2 py-1.5">
+                <DropdownMenuLabel className="text-base">Filters</DropdownMenuLabel>
+                <p className="text-xs text-muted-foreground">
+                  Locations to show and max points you&apos;re willing to donate.
+                </p>
+              </div>
+              {/*scrollable area for filter options*/}
+              <div className="max-h-[40vh] overflow-y-auto p-2">
+                {/*location filter section label*/}
+                <DropdownMenuLabel className="px-2 py-1 text-xs font-normal text-muted-foreground">
+                  Dining locations to show (leave all unchecked for all)
+                </DropdownMenuLabel>
+                {/*list of dining locations*/}
+                {UCSC_LOCATIONS.map((loc) => (
+                  <DropdownMenuCheckboxItem
+                    key={loc}
+                    checked={selectedLocations.has(loc)}
+                    onCheckedChange={() => toggleLocation(loc)}
+                  >
+                    {loc}
+                  </DropdownMenuCheckboxItem>
+                ))}
+                <DropdownMenuSeparator className="my-2" />
+                {/*max donation filter input*/}
+                <div className="space-y-1 px-2 py-1">
+                  <Label htmlFor="max-donation-dropdown" className="text-xs">
+                    Max I&apos;m willing to donate (points)
+                  </Label>
+                  <Input
+                    id="max-donation-dropdown"
+                    type="number"
+                    min={0}
+                    placeholder="No limit"
+                    value={maxDonation}
+                    onChange={(e) => setMaxDonation(e.target.value)}
+                    className="h-8"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+              {/*clears filters button when a filter is active*/}
+              {(selectedLocations.size > 0 || maxDonation !== "") && (
+                <>
+                  <DropdownMenuSeparator />
+                  <div className="p-1">
+                    <Button variant="ghost" size="sm" className="w-full justify-center" onClick={clearFilters}>
+                      Clear filters
+                    </Button>
+                  </div>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {error && (
           <div className="mb-6 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
@@ -251,11 +378,11 @@ export default function RequestsPage() {
         ) : (
           <>
             {/* My Requests Section */}
-            {myRequests.length > 0 && (
+            {filteredMyRequests.length > 0 && (
               <div className="mb-8">
                 <h2 className="mb-4 text-2xl font-semibold">My Requests</h2>
                 <div className="space-y-4">
-                  {myRequests.map((request) => (
+                  {filteredMyRequests.map((request) => (
                     <Card key={request.id}>
                       <CardHeader>
                         <div className="flex items-start justify-between">
@@ -336,7 +463,7 @@ export default function RequestsPage() {
               <h2 className="mb-4 text-2xl font-semibold">
                 {myRequests.length > 0 ? "Other Requests" : "All Requests"}
               </h2>
-              {otherRequests.length === 0 ? (
+              {filteredOtherRequests.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-muted-foreground">
                     <p>No requests available. Be the first to create one!</p>
@@ -344,7 +471,7 @@ export default function RequestsPage() {
                 </Card>
               ) : (
                 <div className="space-y-4">
-                  {otherRequests.map((request) => (
+                  {filteredOtherRequests.map((request) => (
               <Card key={request.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -421,4 +548,3 @@ export default function RequestsPage() {
     </div>
   );
 }
-
