@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
+    "@next/swc-linux-x64-gnu": "^16.1.6",
     "@prisma/client": "^6.19.2",
     "@prisma/extension-accelerate": "latest",
     "@radix-ui/react-avatar": "^1.1.11",
