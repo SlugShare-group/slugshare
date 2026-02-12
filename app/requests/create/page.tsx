@@ -22,6 +22,8 @@ export default function CreateRequestPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [inPersonAllowed, setInPersonAllowed] = useState(true);
+  const [qrCodeAllowed, setQrCodeAllowed] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +44,11 @@ export default function CreateRequestPage() {
         setIsLoading(false);
         return;
       }
+      if (!inPersonAllowed && !qrCodeAllowed) {
+        setError("Please select at least one fulfillment option.");
+        setIsLoading(false);
+        return;
+      }
 
       const response = await fetch("/api/requests", {
         method: "POST",
@@ -52,6 +59,8 @@ export default function CreateRequestPage() {
           location: location.trim(),
           pointsRequested: points,
           message: message.trim() || null,
+	      inPersonAllowed,
+  	      qrCodeAllowed,
         }),
       });
 
@@ -67,7 +76,7 @@ export default function CreateRequestPage() {
 
       // Small delay to ensure database commit, then redirect
       await new Promise((resolve) => setTimeout(resolve, 500));
-      
+
       // Redirect to requests list
       router.push("/requests");
     } catch (error) {
@@ -143,6 +152,29 @@ export default function CreateRequestPage() {
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                   rows={4}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>How can this request be fulfilled?</Label>
+
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        checked={inPersonAllowed}
+                        onChange={(e) => setInPersonAllowed(e.target.checked)}
+                    />
+                    Meet in person
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        checked={qrCodeAllowed}
+                        onChange={(e) => setQrCodeAllowed(e.target.checked)}
+                    />
+                    Receive QR code
+                  </label>
+                </div>
               </div>
 
               <div className="flex gap-4">

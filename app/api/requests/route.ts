@@ -54,7 +54,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { location, pointsRequested, message } = body;
+    const { location, pointsRequested, message, inPersonAllowed, qrCodeAllowed } = body;
+    if (!inPersonAllowed && !qrCodeAllowed) {
+      return NextResponse.json(
+          { error: "At least one fulfillment option required." },
+          { status: 400 }
+      );
+    }
 
     const validation = validateCreateRequest({ location, pointsRequested });
     if (!validation.valid) {
@@ -71,6 +77,8 @@ export async function POST(request: NextRequest) {
         location: location.trim(),
         pointsRequested,
         message: message?.trim() || null,
+	    inPersonAllowed,
+	    qrCodeAllowed,
         status: "pending",
       },
       include: {
