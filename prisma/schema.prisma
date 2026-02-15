@@ -11,19 +11,20 @@ generator client {
 
 // NextAuth.js required models
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String         @unique
   emailVerified DateTime?
   phone         String?
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   accounts      Account[]
   sessions      Session[]
   points        Points?
-  requests      Request[] @relation("Requester")
-  donations     Request[] @relation("Donor")
+  requests      Request[]      @relation("Requester")
+  donations     Request[]      @relation("Donor")
+  notifications Notification[]
 }
 
 model Account {
@@ -83,4 +84,16 @@ model Request {
   donor          User?    @relation("Donor", fields: [donorId], references: [id])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+// Notification model
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "request_accepted", "request_declined", etc.
+  message   String
+  read      Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

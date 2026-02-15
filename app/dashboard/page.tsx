@@ -20,6 +20,16 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
+  // Verify user exists in database
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!dbUser) {
+    // User doesn't exist in database, redirect to login
+    redirect("/auth/login");
+  }
+
   // Get or create points record
   const points = await prisma.points.upsert({
     where: { userId: user.id },
@@ -75,6 +85,9 @@ export default async function DashboardPage() {
           </Button>
           <Button asChild variant="outline">
             <Link href="/requests">View All Requests</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/inbox">Inbox</Link>
           </Button>
         </div>
       </div>

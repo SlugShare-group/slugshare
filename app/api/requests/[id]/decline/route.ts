@@ -15,9 +15,12 @@ export async function POST(
 
     const { id: requestId } = await params;
 
-    // Get the request
+    // Get the request with requester info
     const request = await prisma.request.findUnique({
       where: { id: requestId },
+      include: {
+        requester: true,
+      },
     });
 
     if (!request) {
@@ -43,14 +46,24 @@ export async function POST(
       );
     }
 
-    // Update request status to declined
-    await prisma.request.update({
-      where: { id: requestId },
-      data: {
-        status: "declined",
-        donorId: user.id,
-      },
-    });
+    // Update request status to declined and create notification
+    await prisma.$transaction([
+      prisma.request.update({
+        where: { id: requestId },
+        data: {
+          status: "declined",
+          donorId: user.id,
+        },
+      }),
+      prisma.notification.create({
+        data: {
+          userId: request.requesterId,
+          type: "request_declined",
+          message: `${user.name || user.email} declined your request for ${request.pointsRequested} points at ${request.location}`,
+          read: false,
+        },
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

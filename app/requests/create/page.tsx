@@ -22,48 +22,67 @@ import {
 } from "@/components/ui/accordion";
 import Link from "next/link";
 
-// Helper functions stay outside
+//helper functions
 const getDayKey = () => {
   const days = ['sun', 'mon', 'tues', 'wed', 'thurs', 'fri', 'sat'] as const;
   return days[new Date().getDay()];
 };
 
 const getMealPeriod = () => {
-  const hour = new Date().getHours();
-  if (hour < 11) return 'breakfast';
-  if (hour < 14) return 'lunch';
-  if (hour < 20) return 'dinner';
-  return 'lateNight';
+  const now = new Date();
+  const time = now.getHours() + now.getMinutes() / 60;
+  
+  if (time >= 7 && time < 11){ //7AM-2PM
+    return 'breakfast';
+  }
+  
+  if (time >= 11.5 && time < 14){ //11:30AM-2PM
+    return 'lunch';
+  }
+  
+  if (time >= 17 && time < 20){ //5PM-8PM
+    return 'dinner';
+  }
+
+  if (time >= 20  && time < 23){ //8PM-11PM
+    return 'lateNight';
+  }
+
+  return 'continuousDining';
 };
 
 const isCurrentlyOpen = (schedule: any) => {
-  if (!schedule) return false;
+  if (!schedule){
+    return false;
+  }
   const dayKey = getDayKey();
   const today = schedule[dayKey];
-  if (!today) return false;
+  if (!today){
+    return false;
+  }
   const now = new Date();
+  //HH:MM
   const currentTime = now.getHours() * 100 + now.getMinutes();
   const openTime = parseInt(today.open.replace(":", ""));
   const closeTime = parseInt(today.close.replace(":", ""));
-  return currentTime >= openTime && currentTime <= closeTime;
+  return currentTime >= openTime && currentTime < closeTime;
 };
 
 export default function CreateRequestPage() {
   const router = useRouter();
   
-  // 1. State hooks must be at the top level of the component
+  //state hooks
   const [location, setLocation] = useState<string>(""); 
   const [pointsRequested, setPointsRequested] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Hydration states
+  //hydration states
   const [isClient, setIsClient] = useState(false);
   const [currentMeal, setCurrentMeal] = useState("lunch");
   const [dayKey, setDayKey] = useState<"sun" | "mon" | "tues" | "wed" | "thurs" | "fri" | "sat">("mon");
 
-  // 2. Derived state (isDiningHall) must be inside the component
   const selectedLocationData = UCSC_LOCATIONS_DATA.find(loc => loc.name === location);
   const isDiningHall = selectedLocationData?.standardPricing || false;
 
@@ -81,7 +100,7 @@ export default function CreateRequestPage() {
     try {
       let points: number;
 
-      // Automatically set points for Dining Halls
+      //set cost for Dining Halls
       if (isDiningHall) {
         const meal = getMealPeriod();
         points = DINING_HALL_PRICES.slugPoints[meal as keyof typeof DINING_HALL_PRICES.slugPoints];
@@ -118,7 +137,6 @@ export default function CreateRequestPage() {
         return;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
       router.push("/requests");
     } catch (error) {
       setError("An error occurred. Please try again.");
@@ -166,7 +184,7 @@ export default function CreateRequestPage() {
                     <Check className="h-4 w-4" /> Selected: {location}
                     {isDiningHall && isClient && (
                         <span className="ml-auto font-bold">
-                            Cost: ${DINING_HALL_PRICES.slugPoints[currentMeal as keyof typeof DINING_HALL_PRICES.slugPoints].toFixed(2)}
+                            Cost: ${DINING_HALL_PRICES.slugPoints[currentMeal as keyof typeof DINING_HALL_PRICES.slugPoints]}
                         </span>
                     )}
                   </div>
@@ -215,7 +233,7 @@ export default function CreateRequestPage() {
                                   {price && item.isOpen && (
                                     <div className="text-right flex flex-col items-end">
                                       <span className="text-[9px] uppercase font-bold text-muted-foreground">{currentMeal}</span>
-                                      <span className="font-mono font-bold">${price.toFixed(2)}</span>
+                                      <span className="font-mono font-bold">${price}</span>
                                     </div>
                                   )}
                                 </button>

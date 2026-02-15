@@ -13,8 +13,7 @@ export async function GET() {
     return NextResponse.json({ 
       id: user.id, 
       email: user.email, 
-      name: user.name,
-      phone: user.phone
+      name: user.name
     });
   } catch (error) {
     console.error("Error fetching user:", error);

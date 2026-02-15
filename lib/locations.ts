@@ -1,3 +1,7 @@
+export type LocationData = typeof UCSC_LOCATIONS_DATA[number];
+export type LocationCategory = LocationData['category'];
+export type LocationSchedule = LocationData['schedule'];
+
 export const DINING_HALL_PRICES = {
   slugPoints: { breakfast: 12.60, lunch: 13.65, dinner: 14.70, lateNight: 13.65 },
   
