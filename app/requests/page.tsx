@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input"; //used for entering the maximum d
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react"; 
-import { UCSC_LOCATIONS } from "@/lib/locations"; //all available dining locations
+import { UCSC_LOCATIONS_DATA } from "@/lib/locations"; //all available dining locations
 
 interface Request {
   id: string;
@@ -325,13 +325,13 @@ export default function RequestsPage() {
                   Dining locations to show (leave all unchecked for all)
                 </DropdownMenuLabel>
                 {/*list of dining locations*/}
-                {UCSC_LOCATIONS.map((loc) => (
+                {UCSC_LOCATIONS_DATA.map((loc) => (
                   <DropdownMenuCheckboxItem
-                    key={loc}
-                    checked={selectedLocations.has(loc)}
-                    onCheckedChange={() => toggleLocation(loc)}
+                    key={loc.name}
+                    checked={selectedLocations.has(loc.name)}
+                    onCheckedChange={() => toggleLocation(loc.name)}
                   >
-                    {loc}
+                    {loc.name}
                   </DropdownMenuCheckboxItem>
                 ))}
                 <DropdownMenuSeparator className="my-2" />
