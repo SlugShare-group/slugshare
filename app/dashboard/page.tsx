@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,8 +27,8 @@ export default async function DashboardPage() {
   });
 
   if (!dbUser) {
-    // User doesn't exist in database, redirect to login
-    redirect("/auth/login");
+    // User has a stale JWT but doesn't exist in DB — sign out to clear the token
+    await signOut({ redirectTo: "/auth/login" });
   }
 
   // Get or create points record

@@ -51,7 +51,7 @@ describe("validateCreateRequest", () => {
     const result = validateCreateRequest({ location: "Oakes Cafe" });
     expect(result).toEqual({
       valid: false,
-      error: "Points requested must be a positive integer",
+      error: "Points requested must be a positive number",
       status: 400,
     });
   });
@@ -63,7 +63,7 @@ describe("validateCreateRequest", () => {
     });
     expect(result).toEqual({
       valid: false,
-      error: "Points requested must be a positive integer",
+      error: "Points requested must be a positive number",
       status: 400,
     });
   });
@@ -75,21 +75,17 @@ describe("validateCreateRequest", () => {
     });
     expect(result).toEqual({
       valid: false,
-      error: "Points requested must be a positive integer",
+      error: "Points requested must be a positive number",
       status: 400,
     });
   });
 
-  it("rejects non-integer points", () => {
+  it("accepts decimal points", () => {
     const result = validateCreateRequest({
       location: "Oakes Cafe",
       pointsRequested: 5.5,
     });
-    expect(result).toEqual({
-      valid: false,
-      error: "Points requested must be a positive integer",
-      status: 400,
-    });
+    expect(result).toEqual({ valid: true });
   });
 
   it("rejects string points", () => {
@@ -99,7 +95,7 @@ describe("validateCreateRequest", () => {
     });
     expect(result).toEqual({
       valid: false,
-      error: "Points requested must be a positive integer",
+      error: "Points requested must be a positive number",
       status: 400,
     });
   });
