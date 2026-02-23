@@ -87,6 +87,9 @@ export default async function DashboardPage() {
             <Link href="/requests">View All Requests</Link>
           </Button>
           <Button asChild variant="outline">
+            <Link href="/donation-calculator">Donation Calculator</Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link href="/inbox">Inbox</Link>
           </Button>
         </div>
@@ -95,3 +98,4 @@ export default async function DashboardPage() {
   );
 }
 
+ 
