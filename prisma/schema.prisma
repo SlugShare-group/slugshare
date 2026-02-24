@@ -79,6 +79,8 @@ model Request {
   location       String
   pointsRequested Int
   status         String   @default("pending") // pending, accepted, declined
+  inPersonAllowed Boolean @default(true)
+  qrCodeAllowed   Boolean @default(false)
   message        String?
   requester      User     @relation("Requester", fields: [requesterId], references: [id])
   donor          User?    @relation("Donor", fields: [donorId], references: [id])
