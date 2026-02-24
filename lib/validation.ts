@@ -18,12 +18,12 @@ export function validateCreateRequest(body: {
 
   if (
     typeof pointsRequested !== "number" ||
-    pointsRequested <= 0 ||
-    !Number.isInteger(pointsRequested)
+    !Number.isFinite(pointsRequested) ||
+    pointsRequested <= 0
   ) {
     return {
       valid: false,
-      error: "Points requested must be a positive integer",
+      error: "Points requested must be a positive number",
       status: 400,
     };
   }

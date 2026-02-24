@@ -60,7 +60,7 @@ export async function POST(
       },
     });
 
-    // Perform atomic transaction: transfer points, update request, and create notification
+    // Perform atomic transaction: transfer points, update request, and create notifications
     await prisma.$transaction([
       // Decrease donor's balance
       prisma.points.update({
@@ -94,6 +94,15 @@ export async function POST(
           userId: request.requesterId,
           type: "request_accepted",
           message: `${user.name || user.email} accepted your request for ${request.pointsRequested} points at ${request.location}`,
+          read: false,
+        },
+      }),
+      // Create confirmation notification for donor (so their inbox shows what they accepted)
+      prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: "request_accepted_by_you",
+          message: `You accepted ${request.requester.name || request.requester.email}'s request for ${request.pointsRequested} points at ${request.location}`,
           read: false,
         },
       }),

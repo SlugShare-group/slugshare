@@ -62,7 +62,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const validation = validateCreateRequest({ location, pointsRequested });
+    // Be forgiving: JSON from clients/forms may send numeric input as a string.
+    const normalizedPointsRequested =
+      typeof pointsRequested === "string" ? Number(pointsRequested) : pointsRequested;
+
+    const validation = validateCreateRequest({
+      location,
+      pointsRequested: normalizedPointsRequested,
+    });
     if (!validation.valid) {
       return NextResponse.json(
         { error: validation.error },
@@ -75,7 +82,7 @@ export async function POST(request: NextRequest) {
       data: {
         requesterId: user.id,
         location: location.trim(),
-        pointsRequested,
+        pointsRequested: normalizedPointsRequested,
         message: message?.trim() || null,
 	    inPersonAllowed,
 	    qrCodeAllowed,
