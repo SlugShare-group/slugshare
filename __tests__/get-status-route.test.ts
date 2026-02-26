@@ -34,11 +34,12 @@ describe("GET /api/get/status", () => {
     vi.mocked(prisma.getCredential.findUnique).mockResolvedValue({
       userId: "user-1",
       status: "linked",
+      deviceId: "abcdef0123456789",
+      encryptedPin: "ciphertext",
       linkedAt: new Date("2026-02-01T00:00:00.000Z"),
       lastValidatedAt: new Date("2026-02-01T01:00:00.000Z"),
       invalidatedAt: null,
       lastErrorCode: null,
-      sessionFingerprint: "abc",
     } as unknown as never);
 
     const res = await GET();
@@ -46,5 +47,7 @@ describe("GET /api/get/status", () => {
     const data = await res.json();
     expect(data.linked).toBe(true);
     expect(data.status).toBe("linked");
+    expect(data.model).toBe("pin_device");
+    expect(data.deviceIdTail).toBe("6789");
   });
 });

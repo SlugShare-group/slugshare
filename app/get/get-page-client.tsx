@@ -6,12 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 type GetStatus = {
   linked: boolean;
+  model: string;
   status: string;
   linkedAt: string | null;
   lastValidatedAt: string | null;
   invalidatedAt: string | null;
   lastErrorCode: string | null;
-  sessionFingerprint: string | null;
+  deviceIdTail: string | null;
 };
 
 export function GetPageClient() {
@@ -48,7 +49,7 @@ export function GetPageClient() {
 
   const handleConnect = async () => {
     if (!validatedInput.trim()) {
-      setMessage("Paste a validated GET URL or a session token");
+      setMessage("Paste a validated GET URL (or validated session id)");
       setMessageTone("error");
       return;
     }
@@ -130,19 +131,19 @@ export function GetPageClient() {
     <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
       <Card className="border-slate-300 bg-white/90 shadow-xl shadow-slate-900/5 backdrop-blur">
         <CardHeader>
-          <CardTitle className="text-2xl font-black text-slate-900">Connect Donor Session</CardTitle>
+          <CardTitle className="text-2xl font-black text-slate-900">Link Donor GET Device</CardTitle>
           <CardDescription>
-            Paste a validated GET redirect URL or a raw session token. The token is encrypted at rest.
+            Paste a validated GET redirect URL (or validated session id). We create a device + PIN and store it encrypted.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <label className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            Session Input
+            Validated Link Input
           </label>
           <textarea
             value={validatedInput}
             onChange={(event) => setValidatedInput(event.target.value)}
-            placeholder="https://...validated... OR raw session token"
+            placeholder="https://...validated... OR validated session UUID"
             className="min-h-[160px] w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 font-mono text-sm text-slate-800 outline-none transition focus:border-amber-300"
           />
           <div className="flex flex-wrap gap-3">
@@ -195,6 +196,10 @@ export function GetPageClient() {
                 <dd className="font-semibold capitalize">{status.status}</dd>
               </div>
               <div className="flex justify-between gap-3">
+                <dt className="text-slate-400">Credential Model</dt>
+                <dd className="font-semibold">{status.model}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
                 <dt className="text-slate-400">Linked At</dt>
                 <dd>{status.linkedAt ? new Date(status.linkedAt).toLocaleString() : "-"}</dd>
               </div>
@@ -213,9 +218,9 @@ export function GetPageClient() {
                 <dd>{status.lastErrorCode ?? "-"}</dd>
               </div>
               <div className="mt-4 rounded-lg border border-slate-800 bg-slate-900 p-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Fingerprint</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Device ID Tail</p>
                 <p className="mt-1 truncate font-mono text-xs text-slate-300">
-                  {status.sessionFingerprint ?? "-"}
+                  {status.deviceIdTail ?? "-"}
                 </p>
               </div>
             </dl>

@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { extractGetSessionToken } from "@/lib/get/parse";
+import { extractValidatedSessionId } from "@/lib/get/parse";
 
-describe("extractGetSessionToken", () => {
+describe("extractValidatedSessionId", () => {
   it("extracts uuid from validated URL", () => {
-    const token = extractGetSessionToken(
+    const token = extractValidatedSessionId(
       "https://example.edu/validated?sessionId=123e4567-e89b-12d3-a456-426614174000"
     );
 
     expect(token).toBe("123e4567-e89b-12d3-a456-426614174000");
   });
 
-  it("accepts raw token", () => {
-    const token = extractGetSessionToken("abcDEF0123456789token");
-    expect(token).toBe("abcDEF0123456789token");
+  it("accepts raw uuid input", () => {
+    const token = extractValidatedSessionId("123e4567-e89b-12d3-a456-426614174000");
+    expect(token).toBe("123e4567-e89b-12d3-a456-426614174000");
   });
 
   it("rejects invalid input", () => {
-    expect(extractGetSessionToken("   ")).toBeNull();
+    expect(extractValidatedSessionId("not-a-session")).toBeNull();
   });
 });

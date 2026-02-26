@@ -18,6 +18,8 @@ export async function getLinkedCredentialForUser(userId: string) {
     where: {
       userId,
       status: "linked",
+      deviceId: { not: null },
+      encryptedPin: { not: null },
     },
   });
 }

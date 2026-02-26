@@ -6,14 +6,16 @@ import {
 } from "@/lib/get/crypto";
 
 const ORIGINAL_KEY = process.env.GET_CREDENTIALS_ENCRYPTION_KEY;
+const ORIGINAL_SECRET = process.env.GET_CREDENTIAL_SECRET;
 
 describe("GET crypto", () => {
   afterEach(() => {
     process.env.GET_CREDENTIALS_ENCRYPTION_KEY = ORIGINAL_KEY;
+    process.env.GET_CREDENTIAL_SECRET = ORIGINAL_SECRET;
   });
 
   it("encrypts and decrypts token", () => {
-    process.env.GET_CREDENTIALS_ENCRYPTION_KEY = Buffer.alloc(32, 1).toString("base64");
+    process.env.GET_CREDENTIAL_SECRET = "test-secret-value";
 
     const token = "session-token-123";
     const encrypted = encryptSessionToken(token);

@@ -15,8 +15,8 @@ export function Pdf417Canvas({
   value,
   scale = 4,
   height = 20,
-  aspectRatio = 1 / 4,
-  maxWidthClassName = "max-w-[220px]",
+  aspectRatio = 4 / 1,
+  maxWidthClassName = "max-w-full",
 }: Pdf417CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 

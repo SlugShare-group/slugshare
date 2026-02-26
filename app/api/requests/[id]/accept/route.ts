@@ -147,7 +147,12 @@ export async function POST(
         where: { userId: user.id },
       });
 
-      if (!credential || credential.status !== "linked") {
+      if (
+        !credential ||
+        credential.status !== "linked" ||
+        !credential.deviceId ||
+        !credential.encryptedPin
+      ) {
         return NextResponse.json(
           { error: "Link your GET account before accepting QR requests" },
           { status: 400 }

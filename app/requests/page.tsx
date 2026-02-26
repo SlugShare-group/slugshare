@@ -495,9 +495,9 @@ export default function RequestsPage() {
                           )}
 
                          {/* Added delete button functionality to page.tsx starts here */}
-                          {/* Only show the delete button if the request is still pending
-                          Once a request is accepted or declined it cant be deleted */}
-                          {request.status === "pending" && (
+                          {/* Allow deleting pending requests and QR-mode requests */}
+                          {(request.status === "pending" ||
+                            request.selectedFulfillmentMode === "qr_code") && (
                             <div className="flex gap-2">
                               {/* Delete button - calls handleDelete when clicked */}
                               <Button

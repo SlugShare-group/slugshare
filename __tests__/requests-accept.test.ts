@@ -140,6 +140,8 @@ describe("POST /api/requests/[id]/accept", () => {
     vi.mocked(prisma.getCredential.findUnique).mockResolvedValue({
       userId: "donor-1",
       status: "linked",
+      deviceId: "abcdef0123456789",
+      encryptedPin: "ciphertext",
     } as unknown as never);
     vi.mocked(prisma.request.update).mockResolvedValue({} as unknown as never);
     vi.mocked(prisma.getFulfillment.upsert).mockResolvedValue({} as unknown as never);

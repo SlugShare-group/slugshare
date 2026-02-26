@@ -2,7 +2,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { retrieveAccounts, retrieveBarcodePayload } from "@/lib/get/adapter";
 import { getErrorResponse } from "@/lib/get/response";
 import {
-  decryptCredentialTokenOrThrow,
+  getActiveGetSessionForUser,
   markCredentialInvalid,
   shouldInvalidateCredential,
 } from "@/lib/get/server";
@@ -34,13 +34,14 @@ export async function GET(req: Request) {
       });
     }
 
-    const sessionToken = decryptCredentialTokenOrThrow(credential.encryptedSessionToken);
-
     let accounts: Awaited<ReturnType<typeof retrieveAccounts>> | null = null;
     let barcodeSampleState = "not_requested";
+    let activeSessionId: string | null = null;
 
     try {
-      accounts = await retrieveAccounts(sessionToken);
+      const activeSession = await getActiveGetSessionForUser(user.id);
+      activeSessionId = activeSession.sessionId;
+      accounts = await retrieveAccounts(activeSession.sessionId);
     } catch (error) {
       if (shouldInvalidateCredential(error)) {
         await markCredentialInvalid(user.id, "auth_invalid");
@@ -56,7 +57,9 @@ export async function GET(req: Request) {
 
       if (request && request.requesterId === user.id && request.selectedFulfillmentMode === "qr_code") {
         try {
-          await retrieveBarcodePayload(sessionToken);
+          if (activeSessionId) {
+            await retrieveBarcodePayload(activeSessionId);
+          }
           barcodeSampleState = "ok";
         } catch {
           barcodeSampleState = "failed";
@@ -69,7 +72,8 @@ export async function GET(req: Request) {
     return Response.json({
       linked: true,
       status: credential.status,
-      sessionFingerprint: credential.sessionFingerprint,
+      model: credential.encryptedPin && credential.deviceId ? "pin_device" : "unknown",
+      deviceIdTail: credential.deviceId ? credential.deviceId.slice(-4) : null,
       linkedAt: credential.linkedAt,
       lastValidatedAt: credential.lastValidatedAt,
       accountsCount: accounts?.length ?? 0,
