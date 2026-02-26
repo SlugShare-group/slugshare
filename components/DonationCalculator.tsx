@@ -159,7 +159,7 @@ type DonationPace = "evenly" | "now" | "end";
         ? Math.floor(totalDonatable / daysRemaining)
         : null;
 
-    // Build chart data: projected balance over time
+    // creates chart data: projected balance over time
     const chartData =
       avgSpendingValid &&
       balance !== null &&
@@ -261,8 +261,6 @@ type DonationPace = "evenly" | "now" | "end";
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {/* <Calculator className="h-5 w-5" /> */}
-              {/* Your numbers */}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -308,7 +306,7 @@ type DonationPace = "evenly" | "now" | "end";
               
             </div>
 
-            {/* Donation pace selector - only when user can donate */}
+            {/* Donation pace selector that is only available when user can donate */}
             {avgSpendingValid &&
               balance !== null &&
               totalDonatable !== null &&
@@ -335,7 +333,7 @@ type DonationPace = "evenly" | "now" | "end";
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    When do you want to donate your surplus points?
+                    When do you want to donate your extra points?
                   </p>
                 </div>
               )}
@@ -371,8 +369,8 @@ type DonationPace = "evenly" | "now" | "end";
                   </div>
                 </div>
 
-                {/* Projected balance chart */}
-                {/*}
+                {/* Projected balance line graph */}
+                
                 {chartData.length > 0 && (
                   <div className="mt-6">
                     <h4 className="mb-3 text-sm font-medium">
@@ -431,90 +429,6 @@ type DonationPace = "evenly" | "now" | "end";
                       </ResponsiveContainer>
                     </div>
                   </div>
-                )}
-                  */}
-                {/* Daily amounts chart */}
-                {dailyAmountsData.length > 0 && (
-                  <div className="mt-6">
-                    <h4 className="mb-3 text-sm font-medium">
-                      Daily spending and donations
-                    </h4>
-                    <p className="mb-3 text-xs text-muted-foreground">
-                      See how much you'll spend and donate each day
-                    </p>
-                    {/* height container */}
-                    <div className="h-[280px] w-full">
-                      {/* scale to container size */}
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={dailyAmountsData}
-                          margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
-                        >
-                          {/* Background grid lines */}
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          {/* x axis shows day labels "Day 1" to "Last day"
-                            interval logic reduces label crowding if many days, skip some labels. If few days show all labels
-                          */}
-                          <XAxis
-                            dataKey="label"
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            interval={
-                              daysRemaining > 30
-                                ? Math.floor(daysRemaining / 10)
-                                : daysRemaining > 14
-                                  ? 2
-                                  : 0
-                            }
-                          />
-                          {/* y axis shows point values and tickFormatter to show unchanged values*/}
-                          <YAxis
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            tickFormatter={(v) => `${v}`}
-                          />
-                          {/* appears when hovering over bars, shows daily donation and daily spending*/}
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--card))",
-                              border: "1px solid hsl(var(--border))",
-                              borderRadius: "var(--radius)",
-                            }}
-                            formatter={(value, name) => [
-                              `${value ?? 0} pts`,
-                              name === "dailySpending" ? "Daily spending" : "Daily donation",
-                            ]}
-                          />
-                          <Legend
-                            formatter={(value) =>
-                              value === "dailySpending"
-                                ? "Daily spending"
-                                : "Daily donation"
-                            }
-                          />
-                          <Bar
-                            dataKey="dailySpending"
-                            fill="hsl(217, 91%, 60%)"
-                            name="dailySpending"
-                          />
-                          <Bar
-                            dataKey="dailyDonation"
-                            fill="hsl(142, 71%, 45%)"
-                            name="dailyDonation"
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-
-                {/* Show warning when user has no surplus to donate */}
-                {totalDonatable !== null && totalDonatable === 0 && (
-                  <p className="text-sm text-amber-600">
-                    {/*With your current balance and spending, you won’t have points
-                    left to donate. Consider lowering your daily spending estimate
-                    or updating your balance if it’s incorrect.*/}
-                  </p>
                 )}
               </div>
             )}
