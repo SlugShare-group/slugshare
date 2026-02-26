@@ -7,8 +7,10 @@ ADD COLUMN     "selectedFulfillmentMode" TEXT;
 CREATE TABLE "GetCredential" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "encryptedSessionToken" TEXT NOT NULL,
-    "sessionFingerprint" TEXT NOT NULL,
+    "deviceId" TEXT,
+    "encryptedPin" TEXT,
+    "encryptedSessionToken" TEXT,
+    "sessionFingerprint" TEXT,
     "status" TEXT NOT NULL DEFAULT 'linked',
     "linkedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastValidatedAt" TIMESTAMP(3),
