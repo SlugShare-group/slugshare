@@ -135,9 +135,9 @@ export function ScanRequestClient({ requestId }: { requestId: string }) {
             <>
               <Pdf417Canvas
                 value={payload}
-                scale={5}
-                height={24}
-                aspectRatio={4 / 1}
+                scaleX={4}
+                scaleY={4}
+                rowMult={4}
                 maxWidthClassName="max-w-full"
               />
               <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 sm:grid-cols-2">

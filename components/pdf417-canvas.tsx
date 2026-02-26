@@ -5,17 +5,17 @@ import bwipjs from "bwip-js";
 
 type Pdf417CanvasProps = {
   value: string;
-  scale?: number;
-  height?: number;
-  aspectRatio?: number;
+  scaleX?: number;
+  scaleY?: number;
+  rowMult?: number;
   maxWidthClassName?: string;
 };
 
 export function Pdf417Canvas({
   value,
-  scale = 4,
-  height = 20,
-  aspectRatio = 4 / 1,
+  scaleX = 4,
+  scaleY = 4,
+  rowMult = 4,
   maxWidthClassName = "max-w-full",
 }: Pdf417CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -28,8 +28,9 @@ export function Pdf417Canvas({
       bwipjs.toCanvas(canvas, {
         bcid: "pdf417",
         text: value,
-        scale,
-        height,
+        scaleX,
+        scaleY,
+        rowmult: rowMult,
         includetext: false,
         backgroundcolor: "FFFFFF",
         paddingwidth: 10,
@@ -38,14 +39,11 @@ export function Pdf417Canvas({
     } catch (error) {
       console.error("Unable to render PDF417 barcode:", error);
     }
-  }, [value, scale, height]);
+  }, [value, scaleX, scaleY, rowMult]);
 
   return (
-    <div
-      className={`mx-auto w-full overflow-hidden rounded-xl border-2 border-slate-300 bg-white p-4 shadow-sm ${maxWidthClassName}`}
-      style={{ aspectRatio }}
-    >
-      <canvas ref={canvasRef} className="h-full w-full" />
+    <div className={`mx-auto w-full overflow-x-auto rounded-xl border-2 border-slate-300 bg-white p-4 shadow-sm ${maxWidthClassName}`}>
+      <canvas ref={canvasRef} className="mx-auto block h-auto max-w-none" style={{ imageRendering: "pixelated" }} />
     </div>
   );
 }
