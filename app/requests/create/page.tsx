@@ -51,6 +51,13 @@ const getMealPeriod = () => {
   return 'continuousDining';
 };
 
+const getCloseTime = (schedule: any, dayKey: string): string | undefined => {
+  const today = schedule?.[dayKey];
+  if (!today) return undefined;
+  if (Array.isArray(today)) return today[today.length - 1]?.close;
+  return today.close;
+};
+
 const isCurrentlyOpen = (schedule: any) => {
   if (!schedule){
     return false;
@@ -146,8 +153,6 @@ export default function CreateRequestPage() {
         return;
       }
 
-      console.log("Request created successfully:", data);
-
       // Small delay to ensure database commit, then redirect
       await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -242,7 +247,7 @@ export default function CreateRequestPage() {
                                   <div className="flex flex-col text-left">
                                     <span className="font-semibold">{item.name}</span>
                                     <span className="text-[10px] flex items-center gap-1">
-                                      {!item.isOpen ? "Currently Closed" : `Open until ${item.schedule[dayKey]?.close}`}
+                                      {!item.isOpen ? "Currently Closed" : `Open until ${getCloseTime(item.schedule, dayKey)}`}
                                     </span>
                                   </div>
                                   {price && item.isOpen && (
