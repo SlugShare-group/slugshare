@@ -121,7 +121,6 @@ export default function CreateRequestPage() {
                             <div key={item.name} className="flex flex-col gap-2">
                               <button
                                 type="button"
-                                // Removed the disabled={!item.isOpen} line so it's always clickable
                                 onClick={() => setLocation(location === item.name ? "" : item.name)}
                                 className={`flex items-center justify-between p-3 text-sm rounded-md transition-all border ${
                                   location === item.name 
@@ -133,7 +132,7 @@ export default function CreateRequestPage() {
                                   <span className="font-semibold">{item.name}</span>
                                   <span className="text-[10px] opacity-80">
                                     {item.category === "Service" ? (
-                                      "Available Online"
+                                      "Custom Availability"
                                     ) : item.customNote ? (
                                       item.customNote
                                     ) : !item.isOpen ? (
@@ -145,7 +144,7 @@ export default function CreateRequestPage() {
                                     )}
                                   </span>
                                 </div>
-                                {/* Visual indicator that it's expandable */}
+                                {/* expandable visual indicator */}
                                 <div className={`transition-transform ${location === item.name ? "rotate-180" : ""}`}>
                                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
