@@ -28,10 +28,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Suspense fallback={<header className="border-b bg-background h-16" />}>
-          <Navbar />
-        </Suspense>
         <Providers>
+        <Suspense fallback={<header className="border-b bg-background h-16" />}>
+        <Navbar />
+        </Suspense>
           <main>{children}</main>
         </Providers>
       </body>

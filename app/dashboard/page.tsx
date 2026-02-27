@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,8 +27,8 @@ export default async function DashboardPage() {
   });
 
   if (!dbUser) {
-    // User doesn't exist in database, redirect to login
-    redirect("/auth/login");
+    // User has a stale JWT but doesn't exist in DB — sign out to clear the token
+    await signOut({ redirectTo: "/auth/login" });
   }
 
   // Get or create points record
@@ -45,7 +46,7 @@ export default async function DashboardPage() {
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold">Dashboard</h1>
-        </div>
+        </div>     
 
         <div className="mb-6 grid gap-6 md:grid-cols-2">
           <Card>
@@ -58,41 +59,25 @@ export default async function DashboardPage() {
               <UpdatePointsForm currentBalance={points.balance} />
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Information</CardTitle>
-              <CardDescription>Your profile details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">Email</p>
-                <p className="text-sm">{user.email}</p>
-              </div>
-              {user.name && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Name</p>
-                  <p className="text-sm">{user.name}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
-
-        <div className="flex gap-4">
+        
+        <div className="flex gap-4 space-y-4">
           <Button asChild>
             <Link href="/requests/create">Create Request</Link>
           </Button>
+
           <Button asChild variant="outline">
             <Link href="/requests">View All Requests</Link>
           </Button>
+
           <Button asChild variant="outline">
             <Link href="/donation-calculator">Donation Calculator</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/inbox">Inbox</Link>
+            <Link href="/additional-resources">Additional Resources</Link>
           </Button>
-        </div>
+        </div>   
       </div>
     </div>
   );

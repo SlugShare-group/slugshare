@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UserMenu } from "@/components/user-menu";
 import { getCurrentUser } from "@/lib/auth";
+import { Button } from "./ui/button";
 
 export async function Navbar() {
   const user = await getCurrentUser();
@@ -8,16 +9,27 @@ export async function Navbar() {
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-8">
-        {/* if no user: landing page or login; if user: dashboard */}
         <Link 
-          href={user ? "/dashboard" : "/auth/login"} 
+          href={user ? "/dashboard" : "/"} 
           className="text-xl font-bold tracking-tight"
         >
           SlugShare
         </Link>
 
-        {/* hide profile menu on login page */}
-        {user && <UserMenu user={user} />}
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              {/* inbox and profile only show if logged in */}
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/inbox">Inbox</Link>
+              </Button>
+              {/* profile menu inside flex container */}
+              <UserMenu user={user} />
+            </>
+          ) : (
+            null
+          )}
+        </div>
       </div>
     </header>
   );
