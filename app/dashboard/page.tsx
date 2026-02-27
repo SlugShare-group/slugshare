@@ -73,10 +73,12 @@ export default async function DashboardPage() {
           <Button asChild variant="outline">
             <Link href="/donation-calculator">Donation Calculator</Link>
           </Button>
+          
           <Button asChild variant="outline">
-            <Link href="/inbox">Inbox</Link>
             <Link href="/additional-resources">Additional Resources</Link>
           </Button>
+
+
         </div>   
       </div>
     </div>
