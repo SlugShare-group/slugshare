@@ -134,7 +134,7 @@ export default function CreateRequestPage() {
                                     {item.name === "Produce Pop-Up" ? (
                                       // Priority 1: Specific logic for Pop-Up
                                       !item.isOpen ? (
-                                        <span className="text-destructive font-medium">Currently Closed - Opens {getDayKey() === 'wed' ? 'Friday' : 'Wednesday'}</span>
+                                        <span>Currently Closed - Opens {getDayKey() === 'wed' ? 'Friday' : 'Wednesday'}</span>
                                       ) : (
                                         `Open at ${item.schedule[dayKey].displayLocation} until ${item.schedule[dayKey].close}`
                                       )
