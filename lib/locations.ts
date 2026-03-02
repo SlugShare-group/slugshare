@@ -263,7 +263,6 @@ export const UCSC_LOCATIONS_DATA = [
   },
 
   //additional resources
-
   {    
     name: "Meal swipe request form",
     category: "Services",
@@ -491,7 +490,7 @@ export const UCSC_LOCATIONS_DATA = [
     name: "engaging education Nutrition Lounge",
     category: "Food Pantries",
     siteURL: "https://engagingeducation.org/",
-    location: "Redwood Building, across from Bay Tree Bookstore and above Bike Co-op",
+    location: "Redwood Building, across from Bay Tree Bookstore & above Bike Co-op",
     mapURL: "https://maps.app.goo.gl/zN2HVmEN4oBBLGjj9",
     description: "Visit the center for a quick snack, a space to study, and learn about our programs and other resources!",
     schedule: {
