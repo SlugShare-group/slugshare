@@ -121,7 +121,6 @@ export default function CreateRequestPage() {
                             <div key={item.name} className="flex flex-col gap-2">
                               <button
                                 type="button"
-                                // Removed the disabled={!item.isOpen} line so it's always clickable
                                 onClick={() => setLocation(location === item.name ? "" : item.name)}
                                 className={`flex items-center justify-between p-3 text-sm rounded-md transition-all border ${
                                   location === item.name 
@@ -132,20 +131,24 @@ export default function CreateRequestPage() {
                                 <div className="flex flex-col text-left">
                                   <span className="font-semibold">{item.name}</span>
                                   <span className="text-[10px] opacity-80">
-                                    {item.category === "Service" ? (
+                                    {item.name === "Produce Pop-Up" ? (
+                                      // Priority 1: Specific logic for Pop-Up
+                                      !item.isOpen ? (
+                                        <span>Currently Closed - Opens {getDayKey() === 'wed' ? 'Friday' : 'Wednesday'}</span>
+                                      ) : (
+                                        `Open at ${item.schedule[dayKey].displayLocation} until ${item.schedule[dayKey].close}`
+                                      )
+                                    ) : item.category === "Services" ? (
+                                      // Priority 2: General Services
                                       "Available Online"
-                                    ) : item.customNote ? (
-                                      item.customNote
-                                    ) : !item.isOpen ? (
-                                      <span className="text-destructive font-medium">Currently Closed</span>
                                     ) : (
-                                      `Open until ${Array.isArray(item.schedule[dayKey]) 
-                                        ? item.schedule[dayKey][0].close 
-                                        : item.schedule[dayKey].close}`
+                                      // Priority 3: Standard Food Pantries
+                                      item.customNote || (item.isOpen ? `Open until ${item.schedule[dayKey].close}` : "Currently Closed")
                                     )}
                                   </span>
                                 </div>
-                                {/* Visual indicator that it's expandable */}
+
+                                {/* expandable visual indicator */}
                                 <div className={`transition-transform ${location === item.name ? "rotate-180" : ""}`}>
                                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -163,29 +166,35 @@ export default function CreateRequestPage() {
                                     </p>
                                   )}
 
-                                  <div className="flex flex-wrap gap-3">
-                                    {(item.mapURL || item.schedule[dayKey]?.mapURL) && (
-                                      <a 
-                                        href={item.schedule[dayKey]?.mapURL || item.mapURL} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline flex items-center gap-1 font-medium"
-                                      >
-                                        📍{item.schedule[dayKey]?.displayLocation || item.location || 'Location'}
-                                      </a>
-                                    )}
-                                    {item.siteURL && (
-                                      <a 
-                                        href={item.siteURL} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline font-medium"
-                                      >
-                                        Website →
-                                      </a>
-                                    )}
+                                  <div className="flex items-center justify-between w-full border-t pt-2 mt-2">
+                                    <div className="flex gap-3">
+                                      {(item.mapURL || item.schedule[dayKey]?.mapURL) && (
+                                        <a 
+                                          href={item.schedule[dayKey]?.mapURL || item.mapURL} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:underline flex items-center gap-1 font-medium"
+                                        >
+                                          📍 {item.schedule[dayKey]?.displayLocation || item.location || 'Location'}
+                                        </a>
+                                      )}
+                                    </div>
+
+                                    <div>
+                                      {item.siteURL && (
+                                        <a 
+                                          href={item.siteURL} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:underline font-medium"
+                                        >
+                                          Website →
+                                        </a>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
+
                               )}
                             </div>
                           );
