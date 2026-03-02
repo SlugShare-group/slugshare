@@ -2,6 +2,7 @@ import Link from "next/link";
 import { UserMenu } from "@/components/user-menu";
 import { getCurrentUser } from "@/lib/auth";
 import { Button } from "./ui/button";
+import { ModeToggle } from "./mode-toggle"; // Import the toggle here
 
 export async function Navbar() {
   const user = await getCurrentUser();
@@ -16,18 +17,21 @@ export async function Navbar() {
           SlugShare
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          {/* ModeToggle works here because it is a Client Component leaf */}
+          <ModeToggle />
+
           {user ? (
-            <>
-              {/* inbox and profile only show if logged in */}
+            <div className="flex items-center gap-4 ml-2">
               <Button asChild variant="ghost" size="sm">
                 <Link href="/inbox">Inbox</Link>
               </Button>
-              {/* profile menu inside flex container */}
               <UserMenu user={user} />
-            </>
+            </div>
           ) : (
-            null
+            <Button asChild variant="default" size="sm">
+              <Link href="/login">Login</Link>
+            </Button>
           )}
         </div>
       </div>
