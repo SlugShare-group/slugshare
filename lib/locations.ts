@@ -263,7 +263,6 @@ export const UCSC_LOCATIONS_DATA = [
   },
 
   //additional resources
-
   {    
     name: "Meal swipe request form",
     category: "Services",
@@ -412,7 +411,7 @@ export const UCSC_LOCATIONS_DATA = [
 
   {    
     name: "Ethnic Resource Center’s Food Pantry",
-    category: "Food Pantry",
+    category: "Food Pantries",
     siteURL: "https://belong.ucsc.edu/resource-centers/",
     location: "Crown Provost House",
     mapURL: "https://maps.app.goo.gl/dHTPw9xBW4Rrczcm7",
@@ -491,7 +490,7 @@ export const UCSC_LOCATIONS_DATA = [
     name: "engaging education Nutrition Lounge",
     category: "Food Pantries",
     siteURL: "https://engagingeducation.org/",
-    location: "In the Redwood Building, across from the Bay Tree Bookstore and above the Bike Co-op",
+    location: "Redwood Building, across from Bay Tree Bookstore & above Bike Co-op",
     mapURL: "https://maps.app.goo.gl/zN2HVmEN4oBBLGjj9",
     description: "Visit the center for a quick snack, a space to study, and learn about our programs and other resources!",
     schedule: {
@@ -513,6 +512,25 @@ export const UCSC_LOCATIONS_DATA = [
     location: "Academic Resource Center 121",
     mapURL: "https://maps.app.goo.gl/HB2ddpbvxh7yDbCa9",
     description: "A welcoming space created with transfer and re-entry students in mind. All are welcome.",
+    schedule: {
+      mon: { open: "9:00", close: "17:00" },
+      tues: { open: "9:00", close: "17:00" },
+      wed: { open: "9:00", close: "17:00" },
+      thurs: { open: "9:00", close: "17:00" },
+      fri: { open: "9:00", close: "17:00" },
+      sat: null,
+      sun: null,
+    },
+    standardPricing: false,
+  },
+
+  {    
+    name: "EOP Food Pantry",
+    category: "Food Pantries",
+    siteURL: "https://slugcents.ucsc.edu/free-stuff/",
+    location: "121 Academic Resources Center",
+    mapURL: "https://maps.app.goo.gl/5X1jtGrYgHHZctNu8",
+    description: "Educational Opportunity Programs (EOP) at UC Santa Cruz provide dedicated support to first-generation, low-income, and educationally disadvantaged students.",
     schedule: {
       mon: { open: "9:00", close: "17:00" },
       tues: { open: "9:00", close: "17:00" },
