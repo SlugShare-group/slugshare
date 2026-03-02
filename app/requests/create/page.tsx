@@ -68,6 +68,38 @@ const isCurrentlyOpen = (schedule: any) => {
   return currentTime >= openTime && currentTime < closeTime;
 };
 
+type DayKey = "sun" | "mon" | "tues" | "wed" | "thurs" | "fri" | "sat";
+type OpenCloseWindow = { open: string; close: string };
+
+function isOpenCloseWindow(value: unknown): value is OpenCloseWindow {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    "open" in value &&
+    "close" in value &&
+    typeof (value as OpenCloseWindow).open === "string" &&
+    typeof (value as OpenCloseWindow).close === "string"
+  );
+}
+
+function getCloseTimeFromSchedule(schedule: unknown, dayKey: DayKey): string | null {
+  if (!schedule || typeof schedule !== "object") return null;
+
+  const dayValue = (schedule as Record<string, unknown>)[dayKey];
+  if (!dayValue) return null;
+
+  if (Array.isArray(dayValue)) {
+    const lastWindow = dayValue.at(-1);
+    return isOpenCloseWindow(lastWindow) ? lastWindow.close : null;
+  }
+
+  if (isOpenCloseWindow(dayValue)) {
+    return dayValue.close;
+  }
+
+  return null;
+}
+
 export default function CreateRequestPage() {
   const router = useRouter();
   
@@ -137,6 +169,10 @@ export default function CreateRequestPage() {
         return;
       }
 
+      // Small delay to ensure database commit, then redirect
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Redirect to requests list
       router.push("/requests");
     } catch (error) {
       setError("An error occurred. Please try again.");
@@ -209,6 +245,7 @@ export default function CreateRequestPage() {
                               const price = item.standardPricing 
                                 ? DINING_HALL_PRICES.slugPoints[currentMeal as keyof typeof DINING_HALL_PRICES.slugPoints] 
                                 : null;
+                              const closeTime = getCloseTimeFromSchedule(item.schedule, dayKey);
 
                               return (
                                 <button
@@ -227,7 +264,7 @@ export default function CreateRequestPage() {
                                   <div className="flex flex-col text-left">
                                     <span className="font-semibold">{item.name}</span>
                                     <span className="text-[10px] flex items-center gap-1">
-                                      {!item.isOpen ? "Currently Closed" : `Open until ${item.schedule[dayKey]?.close}`}
+                                      {!item.isOpen ? "Currently Closed" : `Open until ${closeTime ?? "end of service"}`}
                                     </span>
                                   </div>
                                   {price && item.isOpen && (

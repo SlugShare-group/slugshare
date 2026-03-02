@@ -157,6 +157,30 @@ describe("validateDeleteRequest", () => {
       status: 400,
     });
   });
+
+  it("accepts deleting accepted qr-mode request", () => {
+    const result = validateDeleteRequest(
+      {
+        requesterId: userId,
+        status: "accepted",
+        selectedFulfillmentMode: "qr_code",
+      },
+      userId
+    );
+    expect(result).toEqual({ valid: true });
+  });
+
+  it("accepts deleting completed qr-mode request", () => {
+    const result = validateDeleteRequest(
+      {
+        requesterId: userId,
+        status: "completed",
+        selectedFulfillmentMode: "qr_code",
+      },
+      userId
+    );
+    expect(result).toEqual({ valid: true });
+  });
 });
 
 describe("validateAcceptRequest", () => {

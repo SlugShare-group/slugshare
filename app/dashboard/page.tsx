@@ -78,6 +78,9 @@ export default async function DashboardPage() {
             <Link href="/additional-resources">Additional Resources</Link>
           </Button>
 
+          <Button asChild variant="outline">
+            <Link href="/get">GET Integration</Link>
+          </Button>
 
         </div>   
       </div>

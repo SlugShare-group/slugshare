@@ -32,7 +32,11 @@ export function validateCreateRequest(body: {
 }
 
 export function validateDeleteRequest(
-  request: { requesterId: string; status: string } | null,
+  request: {
+    requesterId: string;
+    status: string;
+    selectedFulfillmentMode?: string | null;
+  } | null,
   userId: string
 ): ValidationResult {
   if (!request) {
@@ -47,7 +51,8 @@ export function validateDeleteRequest(
     };
   }
 
-  if (request.status !== "pending") {
+  const isQrModeRequest = request.selectedFulfillmentMode === "qr_code";
+  if (request.status !== "pending" && !isQrModeRequest) {
     return {
       valid: false,
       error: "You can only delete pending requests",

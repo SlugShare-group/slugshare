@@ -25,6 +25,9 @@ model User {
   requests      Request[]      @relation("Requester")
   donations     Request[]      @relation("Donor")
   notifications Notification[]
+  getCredential GetCredential?
+  qrRequests    GetFulfillment[] @relation("GetFulfillmentRequester")
+  qrDonations   GetFulfillment[] @relation("GetFulfillmentDonor")
 }
 
 model Account {
@@ -78,10 +81,16 @@ model Request {
   donorId        String?
   location       String
   pointsRequested Int
-  status         String   @default("pending") // pending, accepted, declined
+  status         String   @default("pending") // pending, accepted, declined, completed
+  inPersonAllowed Boolean @default(true)
+  qrCodeAllowed   Boolean @default(false)
+  selectedFulfillmentMode String? // in_person, qr_code
+  completedAt    DateTime?
+  completionReason String?
   message        String?
   requester      User     @relation("Requester", fields: [requesterId], references: [id])
   donor          User?    @relation("Donor", fields: [donorId], references: [id])
+  getFulfillment GetFulfillment?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
@@ -96,4 +105,43 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model GetCredential {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  deviceId              String?
+  encryptedPin          String?  @db.Text
+  encryptedSessionToken String?  @db.Text
+  sessionFingerprint    String?
+  status                String   @default("linked") // linked, invalid
+  linkedAt              DateTime @default(now())
+  lastValidatedAt       DateTime?
+  invalidatedAt         DateTime?
+  lastErrorCode         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GetFulfillment {
+  id                 String   @id @default(cuid())
+  requestId          String   @unique
+  requesterId        String
+  donorId            String
+  status             String   @default("active") // active, completed, unavailable, expired
+  issuedAt           DateTime @default(now())
+  expiresAt          DateTime
+  baselineAccountsJson String? @db.Text
+  completedAt        DateTime?
+  completionReason   String?
+  completionDelta    Float?
+  lastCheckedAt      DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requester User    @relation("GetFulfillmentRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  donor     User    @relation("GetFulfillmentDonor", fields: [donorId], references: [id], onDelete: Cascade)
 }
