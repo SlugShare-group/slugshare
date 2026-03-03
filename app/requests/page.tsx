@@ -38,6 +38,8 @@ interface Request {
   message: string | null;
   createdAt: string;
   updatedAt: string;
+  inPersonAllowed: boolean;
+  qrCodeAllowed: boolean;
   requester: {
     id: string;
     name: string | null;
@@ -439,7 +441,16 @@ export default function RequestsPage() {
                               {request.pointsRequested} points
                             </p>
                           </div>
-
+                          <p className="text-sm text-muted-foreground">
+                            Fulfillment:{" "}
+                            <span className="font-medium">
+                              {request.inPersonAllowed && "In person"}
+                              {request.inPersonAllowed &&
+                                  request.qrCodeAllowed &&
+                                  " & "}
+                              {request.qrCodeAllowed && "QR code"}
+                            </span>
+                          </p>
                           {request.message && (
                             <div>
                               <p className="text-sm text-muted-foreground">
@@ -492,7 +503,7 @@ export default function RequestsPage() {
                               <Button
                                 onClick={() => handleDelete(request.id)} // When clicked call handleDelete with this request's ID
                                 disabled={processingId === request.id} // Disable button while deleting to stop double clicks
-                                variant="destructive" // red button 
+                                variant="destructive" // red button
                                 size="sm" // Small button size
                               >
                                 {/* Show "Deleting..." while processing otherwise show "Delete" */}
@@ -551,7 +562,16 @@ export default function RequestsPage() {
                         {request.pointsRequested} points
                       </p>
                     </div>
-
+                    <p className="text-sm text-muted-foreground">
+                      Fulfillment:{" "}
+                      <span className="font-medium">
+                              {request.inPersonAllowed && "In person"}
+                        {request.inPersonAllowed &&
+                            request.qrCodeAllowed &&
+                            " & "}
+                        {request.qrCodeAllowed && "QR code"}
+                            </span>
+                    </p>
                     {request.message && (
                       <div>
                         <p className="text-sm text-muted-foreground">
