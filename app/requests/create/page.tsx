@@ -109,6 +109,8 @@ export default function CreateRequestPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [inPersonAllowed, setInPersonAllowed] = useState(true);
+  const [qrCodeAllowed, setQrCodeAllowed] = useState(false);
 
   //hydration states
   const [isClient, setIsClient] = useState(false);
@@ -151,6 +153,11 @@ export default function CreateRequestPage() {
         setIsLoading(false);
         return;
       }
+      if (!inPersonAllowed && !qrCodeAllowed) {
+        setError("Please select at least one fulfillment option.");
+        setIsLoading(false);
+        return;
+      }
 
       const response = await fetch("/api/requests", {
         method: "POST",
@@ -159,6 +166,8 @@ export default function CreateRequestPage() {
           location: location.trim(),
           pointsRequested: points,
           message: message.trim() || null,
+	      inPersonAllowed,
+  	      qrCodeAllowed,
         }),
       });
 
@@ -308,6 +317,29 @@ export default function CreateRequestPage() {
                   placeholder="Add any additional details..."
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>How can this request be fulfilled?</Label>
+
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        checked={inPersonAllowed}
+                        onChange={(e) => setInPersonAllowed(e.target.checked)}
+                    />
+                    Meet in person
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        checked={qrCodeAllowed}
+                        onChange={(e) => setQrCodeAllowed(e.target.checked)}
+                    />
+                    Receive QR code
+                  </label>
+                </div>
               </div>
 
               <div className="flex gap-4">

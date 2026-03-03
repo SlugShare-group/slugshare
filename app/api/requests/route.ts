@@ -54,7 +54,13 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { location, pointsRequested, message } = body;
+    const { location, pointsRequested, message, inPersonAllowed, qrCodeAllowed } = body;
+    if (!inPersonAllowed && !qrCodeAllowed) {
+      return NextResponse.json(
+          { error: "At least one fulfillment option required." },
+          { status: 400 }
+      );
+    }
 
     // Be forgiving: JSON from clients/forms may send numeric input as a string.
     const normalizedPointsRequested =
@@ -78,6 +84,8 @@ export async function POST(request: NextRequest) {
         location: location.trim(),
         pointsRequested: normalizedPointsRequested,
         message: message?.trim() || null,
+	    inPersonAllowed,
+	    qrCodeAllowed,
         status: "pending",
       },
       include: {
