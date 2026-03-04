@@ -1,6 +1,6 @@
 export type ValidationResult =
-  | { valid: true }
-  | { valid: false; error: string; status: number };
+    | { valid: true }
+    | { valid: false; error: string; status: number };
 
 export function validateCreateRequest(body: {
   location?: unknown;
@@ -9,17 +9,17 @@ export function validateCreateRequest(body: {
   const { location, pointsRequested } = body;
 
   if (
-    !location ||
-    typeof location !== "string" ||
-    location.trim().length === 0
+      !location ||
+      typeof location !== "string" ||
+      location.trim().length === 0
   ) {
     return { valid: false, error: "Location is required", status: 400 };
   }
 
   if (
-    typeof pointsRequested !== "number" ||
-    !Number.isFinite(pointsRequested) ||
-    pointsRequested <= 0
+      typeof pointsRequested !== "number" ||
+      !Number.isFinite(pointsRequested) ||
+      pointsRequested <= 0
   ) {
     return {
       valid: false,
@@ -32,12 +32,12 @@ export function validateCreateRequest(body: {
 }
 
 export function validateDeleteRequest(
-  request: {
-    requesterId: string;
-    status: string;
-    selectedFulfillmentMode?: string | null;
-  } | null,
-  userId: string
+    request: {
+      requesterId: string;
+      status: string;
+      selectedFulfillmentMode?: string | null;
+    } | null,
+    userId: string
 ): ValidationResult {
   if (!request) {
     return { valid: false, error: "Request not found", status: 404 };
@@ -63,10 +63,60 @@ export function validateDeleteRequest(
   return { valid: true };
 }
 
+export function validateEditRequest(
+    request: { requesterId: string; status: string } | null,
+    userId: string,
+    body: { location?: unknown; pointsRequested?: unknown }
+): ValidationResult {
+  if (!request) {
+    return { valid: false, error: "Request not found", status: 404 };
+  }
+
+  if (request.requesterId !== userId) {
+    return {
+      valid: false,
+      error: "You can only edit your own requests",
+      status: 403,
+    };
+  }
+
+  if (request.status !== "pending") {
+    return {
+      valid: false,
+      error: "You can only edit pending requests",
+      status: 400,
+    };
+  }
+
+  const { location, pointsRequested } = body;
+
+  if (
+      !location ||
+      typeof location !== "string" ||
+      location.trim().length === 0
+  ) {
+    return { valid: false, error: "Location is required", status: 400 };
+  }
+
+  if (
+      typeof pointsRequested !== "number" ||
+      pointsRequested <= 0 ||
+      !Number.isFinite(pointsRequested)
+  ) {
+    return {
+      valid: false,
+      error: "Points requested must be a positive integer",
+      status: 400,
+    };
+  }
+
+  return { valid: true };
+}
+
 export function validateAcceptRequest(
-  request: { requesterId: string; status: string; pointsRequested: number } | null,
-  userId: string,
-  donorBalance: number
+    request: { requesterId: string; status: string; pointsRequested: number } | null,
+    userId: string,
+    donorBalance: number
 ): ValidationResult {
   if (!request) {
     return { valid: false, error: "Request not found", status: 404 };

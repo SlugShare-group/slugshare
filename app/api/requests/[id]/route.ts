@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { validateDeleteRequest } from "@/lib/validation";
+import { validateDeleteRequest, validateEditRequest } from "@/lib/validation";
 
 // This function handles DELETE HTTP requests
 // When a user clicks "Delete" on a request, this function runs
@@ -57,6 +57,59 @@ export async function DELETE(
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 } // 500 = Internal Server Error
+    );
+  }
+}
+
+// Handles PATCH requests for editing a pending request
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user || !user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id: requestId } = await params;
+    const body = await request.json();
+    const { location, pointsRequested, message, inPersonAllowed, qrCodeAllowed } = body;
+
+    const existingRequest = await prisma.request.findUnique({
+      where: { id: requestId },
+    });
+
+    const validation = validateEditRequest(existingRequest, user.id, {
+      location,
+      pointsRequested,
+    });
+
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: validation.status }
+      );
+    }
+
+    const updatedRequest = await prisma.request.update({
+      where: { id: requestId },
+      data: {
+        location: location.trim(),
+        pointsRequested,
+        message: message || null,
+        inPersonAllowed: inPersonAllowed ?? true,
+        qrCodeAllowed: qrCodeAllowed ?? false,
+      },
+    });
+
+    return NextResponse.json(updatedRequest);
+  } catch (error) {
+    console.error("Error editing request:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
     );
   }
 }
