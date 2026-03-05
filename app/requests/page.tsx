@@ -24,6 +24,10 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react"; 
 import { UCSC_LOCATIONS_DATA } from "@/lib/locations"; //all available dining locations
+import {
+  filterByLocation,
+  filterOtherRequests,
+} from "@/lib/requestFilters";
 
 interface Request {
   id: string;
@@ -226,25 +230,13 @@ export default function RequestsPage() {
     ? requests.filter((req) => req.requesterId !== currentUserId)
     : requests;
 
-  // Apply location filter: if any locations selected, only show those; otherwise show all
-  const locationFilter = (req: Request) =>
-    selectedLocations.size === 0 || selectedLocations.has(req.location);
-  // This converts the maxdonation input string into a number, if the input is empty it gets treated as "no limit"
-  const maxDonationNum = maxDonation === "" ? null : parseInt(maxDonation, 10);
-  //Checks if the max donation value is valid, so if it exists, is a number and is not negative
-  const maxDonationValid =
-    maxDonationNum !== null && !Number.isNaN(maxDonationNum) && maxDonationNum >= 0;
-  //Applies the locaiton filter to the current users own reuqest
-  const filteredMyRequests = myRequests.filter(locationFilter);
-  //applies the filters to the other users requests
-  const filteredOtherRequests = otherRequests.filter((req) => {
-    //excludes the ruequests that dont match the selected location
-    if (!locationFilter(req)) return false;
-    //if max donation is set, exclude requests that ask for more points than allowed
-    if (maxDonationValid && req.pointsRequested > maxDonationNum!) return false;
-    //If all checks pass, include this reuqest
-    return true;
-  });
+  // Apply filters using extracted logic (tested in __tests__/requestFilters.test.ts)
+  const filteredMyRequests = filterByLocation(myRequests, selectedLocations);
+  const filteredOtherRequests = filterOtherRequests(
+    otherRequests,
+    selectedLocations,
+    maxDonation
+  );
 
   //Toggles a location on or off in the dropdown menu (selectedLocations) set
   const toggleLocation = (location: string) => {
