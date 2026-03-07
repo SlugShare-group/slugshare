@@ -36,9 +36,14 @@ interface Request {
   location: string;
   pointsRequested: number;
   status: string;
+  selectedFulfillmentMode: "in_person" | "qr_code" | null;
+  completedAt: string | null;
+  completionReason: string | null;
   message: string | null;
   createdAt: string;
   updatedAt: string;
+  inPersonAllowed: boolean;
+  qrCodeAllowed: boolean;
   requester: {
     id: string;
     name: string | null;
@@ -58,6 +63,7 @@ export default function RequestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [acceptModeRequest, setAcceptModeRequest] = useState<Request | null>(null);
   // filters requests based on locations and max amount willing to donate
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
   const [maxDonation, setMaxDonation] = useState<string>("");
@@ -105,13 +111,20 @@ export default function RequestsPage() {
     }
   };
 
-  const handleAccept = async (requestId: string) => {
+  const handleAccept = async (
+    requestId: string,
+    mode: "in_person" | "qr_code"
+  ) => {
     if (processingId) return;
 
     try {
       setProcessingId(requestId);
       const response = await fetch(`/api/requests/${requestId}/accept`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ mode }),
       });
 
       const data = await response.json();
@@ -129,7 +142,25 @@ export default function RequestsPage() {
       alert("An error occurred. Please try again.");
     } finally {
       setProcessingId(null);
+      setAcceptModeRequest(null);
     }
+  };
+
+  const handleAcceptClick = (request: Request) => {
+    const supportsInPerson = request.inPersonAllowed;
+    const supportsQr = request.qrCodeAllowed;
+
+    if (supportsInPerson && supportsQr) {
+      setAcceptModeRequest(request);
+      return;
+    }
+
+    if (supportsQr) {
+      void handleAccept(request.id, "qr_code");
+      return;
+    }
+
+    void handleAccept(request.id, "in_person");
   };
 
   const handleDecline = async (requestId: string) => {
@@ -215,6 +246,8 @@ export default function RequestsPage() {
     switch (status) {
       case "accepted":
         return "text-green-600";
+      case "completed":
+        return "text-blue-600";
       case "declined":
         return "text-red-600";
       default:
@@ -400,7 +433,16 @@ export default function RequestsPage() {
                               {request.pointsRequested} points
                             </p>
                           </div>
-
+                          <p className="text-sm text-muted-foreground">
+                            Fulfillment:{" "}
+                            <span className="font-medium">
+                              {request.inPersonAllowed && "In person"}
+                              {request.inPersonAllowed &&
+                                  request.qrCodeAllowed &&
+                                  " & "}
+                              {request.qrCodeAllowed && "QR code"}
+                            </span>
+                          </p>
                           {request.message && (
                             <div>
                               <p className="text-sm text-muted-foreground">
@@ -411,7 +453,30 @@ export default function RequestsPage() {
 
                           {request.status === "accepted" && request.donor && (
                             <p className="text-sm text-muted-foreground">
-                              Accepted by {request.donor.name || request.donor.email}
+                              Accepted by {request.donor.name || request.donor.email} (
+                              {request.selectedFulfillmentMode === "qr_code" ? "QR mode" : "in-person"}
+                              )
+                            </p>
+                          )}
+
+                          {request.status === "accepted" &&
+                            request.selectedFulfillmentMode === "qr_code" && (
+                              <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                                This request is in active QR fulfillment mode.
+                                <div className="mt-2">
+                                  <Button asChild size="sm" variant="outline">
+                                    <Link href={`/requests/${request.id}/scan`}>Open Scan Screen</Link>
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+
+                          {request.status === "completed" && (
+                            <p className="text-sm text-muted-foreground">
+                              Completed
+                              {request.completedAt
+                                ? ` on ${new Date(request.completedAt).toLocaleString()}`
+                                : ""}
                             </p>
                           )}
 
@@ -422,15 +487,15 @@ export default function RequestsPage() {
                           )}
 
                          {/* Added delete button functionality to page.tsx starts here */}
-                          {/* Only show the delete button if the request is still pending
-                          Once a request is accepted or declined it cant be deleted */}
-                          {request.status === "pending" && (
+                          {/* Allow deleting pending requests and QR-mode requests */}
+                          {(request.status === "pending" ||
+                            request.selectedFulfillmentMode === "qr_code") && (
                             <div className="flex gap-2">
                               {/* Delete button - calls handleDelete when clicked */}
                               <Button
                                 onClick={() => handleDelete(request.id)} // When clicked call handleDelete with this request's ID
                                 disabled={processingId === request.id} // Disable button while deleting to stop double clicks
-                                variant="destructive" // red button 
+                                variant="destructive" // red button
                                 size="sm" // Small button size
                               >
                                 {/* Show "Deleting..." while processing otherwise show "Delete" */}
@@ -489,7 +554,16 @@ export default function RequestsPage() {
                         {request.pointsRequested} points
                       </p>
                     </div>
-
+                    <p className="text-sm text-muted-foreground">
+                      Fulfillment:{" "}
+                      <span className="font-medium">
+                              {request.inPersonAllowed && "In person"}
+                        {request.inPersonAllowed &&
+                            request.qrCodeAllowed &&
+                            " & "}
+                        {request.qrCodeAllowed && "QR code"}
+                            </span>
+                    </p>
                     {request.message && (
                       <div>
                         <p className="text-sm text-muted-foreground">
@@ -501,7 +575,7 @@ export default function RequestsPage() {
                     {request.status === "pending" && (
                       <div className="flex gap-2">
                         <Button
-                          onClick={() => handleAccept(request.id)}
+                          onClick={() => handleAcceptClick(request)}
                           disabled={processingId === request.id}
                           size="sm"
                         >
@@ -520,7 +594,14 @@ export default function RequestsPage() {
 
                     {request.status === "accepted" && request.donor && (
                       <p className="text-sm text-muted-foreground">
-                        Accepted by {request.donor.name || request.donor.email}
+                        Accepted by {request.donor.name || request.donor.email} (
+                        {request.selectedFulfillmentMode === "qr_code" ? "QR mode" : "in-person"})
+                      </p>
+                    )}
+
+                    {request.status === "completed" && request.donor && (
+                      <p className="text-sm text-muted-foreground">
+                        Completed by {request.donor.name || request.donor.email}
                       </p>
                     )}
 
@@ -537,6 +618,44 @@ export default function RequestsPage() {
           </>
         )}
       </div>
+      {acceptModeRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+          <Card className="w-full max-w-md border-2 border-slate-300">
+            <CardHeader>
+              <CardTitle>Choose Fulfillment Mode</CardTitle>
+              <CardDescription>
+                Pick how you want to fulfill {acceptModeRequest.requester.name || acceptModeRequest.requester.email}
+                &apos;s request at {acceptModeRequest.location}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                className="w-full justify-start"
+                onClick={() => handleAccept(acceptModeRequest.id, "in_person")}
+                disabled={processingId === acceptModeRequest.id}
+              >
+                Meet In Person (instant transfer)
+              </Button>
+              <Button
+                className="w-full justify-start"
+                variant="outline"
+                onClick={() => handleAccept(acceptModeRequest.id, "qr_code")}
+                disabled={processingId === acceptModeRequest.id}
+              >
+                QR Code Flow (balance-drop completion)
+              </Button>
+              <Button
+                className="w-full"
+                variant="ghost"
+                onClick={() => setAcceptModeRequest(null)}
+                disabled={processingId === acceptModeRequest.id}
+              >
+                Cancel
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

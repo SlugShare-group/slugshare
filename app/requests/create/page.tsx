@@ -288,3 +288,362 @@ export default function CreateRequestPage() {
     </div>
   );
 }
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { UCSC_LOCATIONS_DATA, DINING_HALL_PRICES } from "@/lib/locations";
+import { Clock, Check } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import Link from "next/link";
+
+//helper functions
+const getDayKey = () => {
+  const days = ['sun', 'mon', 'tues', 'wed', 'thurs', 'fri', 'sat'] as const;
+  return days[new Date().getDay()];
+};
+
+const getMealPeriod = () => {
+  const now = new Date();
+  const time = now.getHours() + now.getMinutes() / 60;
+  
+  if (time >= 7 && time < 11){ //7AM-2PM
+    return 'breakfast';
+  }
+  
+  if (time >= 11.5 && time < 14){ //11:30AM-2PM
+    return 'lunch';
+  }
+  
+  if (time >= 17 && time < 20){ //5PM-8PM
+    return 'dinner';
+  }
+
+  if (time >= 20  && time < 23){ //8PM-11PM
+    return 'lateNight';
+  }
+
+  return 'continuousDining';
+};
+
+const isCurrentlyOpen = (schedule: any) => {
+  if (!schedule){
+    return false;
+  }
+  const dayKey = getDayKey();
+  const today = schedule[dayKey];
+  if (!today){
+    return false;
+  }
+  const now = new Date();
+  //HH:MM
+  const currentTime = now.getHours() * 100 + now.getMinutes();
+  const openTime = parseInt(today.open.replace(":", ""));
+  const closeTime = parseInt(today.close.replace(":", ""));
+  return currentTime >= openTime && currentTime < closeTime;
+};
+
+type DayKey = "sun" | "mon" | "tues" | "wed" | "thurs" | "fri" | "sat";
+type OpenCloseWindow = { open: string; close: string };
+
+function isOpenCloseWindow(value: unknown): value is OpenCloseWindow {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    "open" in value &&
+    "close" in value &&
+    typeof (value as OpenCloseWindow).open === "string" &&
+    typeof (value as OpenCloseWindow).close === "string"
+  );
+}
+
+function getCloseTimeFromSchedule(schedule: unknown, dayKey: DayKey): string | null {
+  if (!schedule || typeof schedule !== "object") return null;
+
+  const dayValue = (schedule as Record<string, unknown>)[dayKey];
+  if (!dayValue) return null;
+
+  if (Array.isArray(dayValue)) {
+    const lastWindow = dayValue.at(-1);
+    return isOpenCloseWindow(lastWindow) ? lastWindow.close : null;
+  }
+
+  if (isOpenCloseWindow(dayValue)) {
+    return dayValue.close;
+  }
+
+  return null;
+}
+
+export default function CreateRequestPage() {
+  const router = useRouter();
+  
+  //state hooks
+  const [location, setLocation] = useState<string>(""); 
+  const [pointsRequested, setPointsRequested] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [inPersonAllowed, setInPersonAllowed] = useState(true);
+  const [qrCodeAllowed, setQrCodeAllowed] = useState(false);
+
+  //hydration states
+  const [isClient, setIsClient] = useState(false);
+  const [currentMeal, setCurrentMeal] = useState("lunch");
+  const [dayKey, setDayKey] = useState<"sun" | "mon" | "tues" | "wed" | "thurs" | "fri" | "sat">("mon");
+
+  const selectedLocationData = UCSC_LOCATIONS_DATA.find(loc => loc.name === location);
+  const isDiningHall = selectedLocationData?.standardPricing || false;
+
+  useEffect(() => {
+    setIsClient(true);
+    setCurrentMeal(getMealPeriod());
+    setDayKey(getDayKey());
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      let points: number;
+
+      //set cost for Dining Halls
+      if (isDiningHall) {
+        const meal = getMealPeriod();
+        points = DINING_HALL_PRICES.slugPoints[meal as keyof typeof DINING_HALL_PRICES.slugPoints];
+      } else {
+        points = parseInt(pointsRequested, 10);
+      }
+
+      if (!location) {
+        setError("Location is required");
+        setIsLoading(false);
+        return;
+      }
+
+      if (isNaN(points) || points <= 0) {
+        setError("Points requested must be a positive number");
+        setIsLoading(false);
+        return;
+      }
+      if (!inPersonAllowed && !qrCodeAllowed) {
+        setError("Please select at least one fulfillment option.");
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: location.trim(),
+          pointsRequested: points,
+          message: message.trim() || null,
+	      inPersonAllowed,
+  	      qrCodeAllowed,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || "Failed to create request");
+        setIsLoading(false);
+        return;
+      }
+
+      // Small delay to ensure database commit, then redirect
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Redirect to requests list
+      router.push("/requests");
+    } catch (error) {
+      setError("An error occurred. Please try again.");
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen p-8">
+      <div className="mx-auto max-w-2xl">
+        <div className="mb-6">
+          <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
+            ← Back to Dashboard
+          </Link>
+        </div>
+
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+            <CardTitle>Create Request</CardTitle>
+                        
+            <Button variant="outline" size="sm" asChild>
+            <a 
+              href="https://nutrition.sa.ucsc.edu/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-xs"
+            >
+              View UCSC Menus
+            </a>
+          </Button>          
+          </CardHeader>
+
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                {location && (
+                  <div className="text-sm font-medium text-green-600 flex items-center gap-1 bg-green-50 p-2 rounded-md border border-green-200">
+                    <Check className="h-4 w-4" /> Selected: {location}
+                    {isDiningHall && isClient && (
+                        <span className="ml-auto font-bold">
+                            Cost: ${DINING_HALL_PRICES.slugPoints[currentMeal as keyof typeof DINING_HALL_PRICES.slugPoints]}
+                        </span>
+                    )}
+                  </div>
+                )}
+
+                <Accordion type="single" collapsible className="w-full border rounded-md px-4">
+                  {["Dining Halls", "Markets", "Perks Coffee Bar", "Cafes and Restaurants"].map((category) => (
+                    <AccordionItem key={category} value={category} className="border-b-0">
+                      <AccordionTrigger className="text-sm hover:no-underline py-3">
+                        {category}
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="grid grid-cols-1 gap-2 pb-2">
+                          {isClient && UCSC_LOCATIONS_DATA
+                            .filter((loc) => loc.category === category)
+                            .map((loc) => ({
+                              ...loc,
+                              isOpen: isCurrentlyOpen(loc.schedule),
+                            }))
+                            .sort((a, b) => Number(b.isOpen) - Number(a.isOpen))
+                            .map((item) => {
+                              const price = item.standardPricing 
+                                ? DINING_HALL_PRICES.slugPoints[currentMeal as keyof typeof DINING_HALL_PRICES.slugPoints] 
+                                : null;
+                              const closeTime = getCloseTimeFromSchedule(item.schedule, dayKey);
+
+                              return (
+                                <button
+                                  key={item.name}
+                                  type="button"
+                                  disabled={!item.isOpen}
+                                  onClick={() => setLocation(item.name)}
+                                  className={`flex items-center justify-between p-3 text-sm rounded-md transition-all border ${
+                                    !item.isOpen
+                                      ? "opacity-50 bg-muted cursor-not-allowed border-transparent"
+                                      : location === item.name
+                                      ? "bg-primary text-primary-foreground border-primary font-medium"
+                                      : "hover:bg-accent border-transparent"
+                                  }`}
+                                >
+                                  <div className="flex flex-col text-left">
+                                    <span className="font-semibold">{item.name}</span>
+                                    <span className="text-[10px] flex items-center gap-1">
+                                      {!item.isOpen ? "Currently Closed" : `Open until ${closeTime ?? "end of service"}`}
+                                    </span>
+                                  </div>
+                                  {price && item.isOpen && (
+                                    <div className="text-right flex flex-col items-end">
+                                      <span className="text-[9px] uppercase font-bold text-muted-foreground">{currentMeal}</span>
+                                      <span className="font-mono font-bold">${price}</span>
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+
+              {/* Points input only shows if NOT a dining hall */}
+              {!isDiningHall && (
+                <div className="space-y-2">
+                  <Label htmlFor="points">Points Requested</Label>
+                  <Input
+                    id="points"
+                    type="number"
+                    min="1"
+                    value={pointsRequested}
+                    onChange={(e) => setPointsRequested(e.target.value)}
+                    placeholder="Enter points amount"
+                    required={!isDiningHall}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="message">Message (Optional)</Label>
+                <textarea
+                  id="message"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Add any additional details..."
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>How can this request be fulfilled?</Label>
+
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        checked={inPersonAllowed}
+                        onChange={(e) => setInPersonAllowed(e.target.checked)}
+                    />
+                    Meet in person
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                        type="checkbox"
+                        checked={qrCodeAllowed}
+                        onChange={(e) => setQrCodeAllowed(e.target.checked)}
+                    />
+                    Receive QR code
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <Button type="submit" disabled={isLoading} className="flex-1">
+                  {isLoading ? "Creating..." : "Create Request"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => router.push("/requests")}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
