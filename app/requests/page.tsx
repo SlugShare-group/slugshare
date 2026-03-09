@@ -22,7 +22,8 @@ import {
 import { Input } from "@/components/ui/input"; //used for entering the maximum donation amount
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react"; 
+import { ChevronDown } from "lucide-react";
+import { PageBackLink } from "@/components/page-back-link"; 
 import { UCSC_LOCATIONS_DATA } from "@/lib/locations"; //all available dining locations
 
 interface Request {
@@ -305,16 +306,19 @@ export default function RequestsPage() {
   });
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-full bg-[radial-gradient(circle_at_top,#fef3c7,#f8fafc_40%)] p-8 dark:bg-[radial-gradient(circle_at_top,#1f2937,#0b1220_45%)]">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            ← Back to Dashboard
-          </Link>
-          <div className="flex gap-4">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              Requests
+            </p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-foreground">
+              All Requests
+            </h1>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <PageBackLink href="/dashboard">Back to Dashboard</PageBackLink>
             <Button onClick={fetchRequests} variant="outline" disabled={isLoading}>
               Refresh
             </Button>
@@ -324,10 +328,7 @@ export default function RequestsPage() {
           </div>
         </div>
 
-
-        <div className="mb-6 flex flex-wrap items-center gap-4"> {/*Page header and filter controls container*/}
-
-          <h1 className="text-3xl font-bold">All Requests</h1>{/*Page title*/}
+        <div className="mb-6 flex flex-wrap items-center gap-4">
           {/*dropdown menu that contains all filter options*/}
           <DropdownMenu>
             {/*button that opens the filter dropdown*/}
@@ -416,7 +417,7 @@ export default function RequestsPage() {
                 <h2 className="mb-4 text-2xl font-semibold">My Requests</h2>
                 <div className="space-y-4">
                   {filteredMyRequests.map((request) => (
-                    <Card key={request.id}>
+                    <Card key={request.id} className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div>
@@ -529,7 +530,7 @@ export default function RequestsPage() {
                 {myRequests.length > 0 ? "Other Requests" : "All Requests"}
               </h2>
               {filteredOtherRequests.length === 0 ? (
-                <Card>
+                <Card className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
                   <CardContent className="py-8 text-center text-muted-foreground">
                     <p>No requests available. Be the first to create one!</p>
                   </CardContent>
@@ -537,7 +538,7 @@ export default function RequestsPage() {
               ) : (
                 <div className="space-y-4">
                   {filteredOtherRequests.map((request) => (
-              <Card key={request.id}>
+              <Card key={request.id} className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -628,7 +629,7 @@ export default function RequestsPage() {
       </div>
       {acceptModeRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-          <Card className="w-full max-w-md border-2 border-slate-300">
+          <Card className="w-full max-w-md border-2 border-border bg-card shadow-xl">
             <CardHeader>
               <CardTitle>Choose Fulfillment Mode</CardTitle>
               <CardDescription>

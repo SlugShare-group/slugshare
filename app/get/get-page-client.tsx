@@ -124,38 +124,36 @@ export function GetPageClient() {
 
   const toneClasses =
     messageTone === "ok"
-      ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-      : "border-red-300 bg-red-50 text-red-700";
+      ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200"
+      : "border-red-300 bg-red-50 text-red-700 dark:border-red-500/40 dark:bg-red-950/40 dark:text-red-200";
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-      <Card className="border-slate-300 bg-white/90 shadow-xl shadow-slate-900/5 backdrop-blur">
+      <Card className="border-border bg-card/90 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/20">
         <CardHeader>
-          <CardTitle className="text-2xl font-black text-slate-900">Link Donor GET Device</CardTitle>
+          <CardTitle className="text-2xl font-black text-foreground">Link Donor GET Device</CardTitle>
           <CardDescription>
             Paste a validated GET redirect URL (or validated session id). We create a device + PIN and store it encrypted.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <label className="block text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+          <label className="block text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
             Validated Link Input
           </label>
           <textarea
             value={validatedInput}
             onChange={(event) => setValidatedInput(event.target.value)}
             placeholder="https://...validated... OR validated session UUID"
-            className="min-h-[160px] w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 font-mono text-sm text-slate-800 outline-none transition focus:border-amber-300"
+            className="min-h-[160px] w-full rounded-xl border border-input bg-background px-4 py-3 font-mono text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
           />
           <div className="flex flex-wrap gap-3">
             <Button
-              className="rounded-full bg-slate-900 px-5 hover:bg-slate-800"
               disabled={isSubmitting}
               onClick={handleConnect}
             >
               {isSubmitting ? "Working..." : "Connect GET"}
             </Button>
             <Button
-              className="rounded-full"
               variant="outline"
               disabled={isSubmitting || !status?.linked}
               onClick={handleDisconnect}
@@ -163,7 +161,6 @@ export function GetPageClient() {
               Disconnect
             </Button>
             <Button
-              className="rounded-full"
               variant="outline"
               disabled={isSubmitting}
               onClick={runTesting}
@@ -175,51 +172,51 @@ export function GetPageClient() {
         </CardContent>
       </Card>
 
-      <Card className="border-slate-300 bg-slate-950 text-slate-100 shadow-xl">
+      <Card className="border-border bg-card text-card-foreground shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-black">Link Status</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardDescription>
             Current donor GET connection metadata
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading || !status ? (
-            <p className="text-sm text-slate-300">Loading status...</p>
+            <p className="text-sm text-muted-foreground">Loading status...</p>
           ) : (
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-400">Linked</dt>
+                <dt className="text-muted-foreground">Linked</dt>
                 <dd className="font-semibold">{status.linked ? "Yes" : "No"}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-400">Status</dt>
+                <dt className="text-muted-foreground">Status</dt>
                 <dd className="font-semibold capitalize">{status.status}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-400">Credential Model</dt>
+                <dt className="text-muted-foreground">Credential Model</dt>
                 <dd className="font-semibold">{status.model}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-400">Linked At</dt>
+                <dt className="text-muted-foreground">Linked At</dt>
                 <dd>{status.linkedAt ? new Date(status.linkedAt).toLocaleString() : "-"}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-400">Last Validated</dt>
+                <dt className="text-muted-foreground">Last Validated</dt>
                 <dd>
                   {status.lastValidatedAt ? new Date(status.lastValidatedAt).toLocaleString() : "-"}
                 </dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-400">Invalidated At</dt>
+                <dt className="text-muted-foreground">Invalidated At</dt>
                 <dd>{status.invalidatedAt ? new Date(status.invalidatedAt).toLocaleString() : "-"}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt className="text-slate-400">Last Error</dt>
+                <dt className="text-muted-foreground">Last Error</dt>
                 <dd>{status.lastErrorCode ?? "-"}</dd>
               </div>
-              <div className="mt-4 rounded-lg border border-slate-800 bg-slate-900 p-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Device ID Tail</p>
-                <p className="mt-1 truncate font-mono text-xs text-slate-300">
+              <div className="mt-4 rounded-lg border border-border bg-background/40 p-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Device ID Tail</p>
+                <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
                   {status.deviceIdTail ?? "-"}
                 </p>
               </div>
@@ -229,13 +226,13 @@ export function GetPageClient() {
       </Card>
 
       {testingData && (
-        <Card className="border-slate-300 lg:col-span-2">
+        <Card className="border-border lg:col-span-2">
           <CardHeader>
             <CardTitle>Diagnostics Snapshot</CardTitle>
             <CardDescription>Redacted output from /api/get/testing</CardDescription>
           </CardHeader>
           <CardContent>
-            <pre className="overflow-x-auto rounded-xl border bg-slate-950 p-4 text-xs text-slate-100">
+            <pre className="overflow-x-auto rounded-xl border border-border bg-background/60 p-4 text-xs text-foreground">
               {JSON.stringify(testingData, null, 2)}
             </pre>
           </CardContent>
