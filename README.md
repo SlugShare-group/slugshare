@@ -1,3 +1,4 @@
+[![CI](https://github.com/SlugShare-group/slugshare/actions/workflows/ci.yml/badge.svg)](https://github.com/SlugShare-group/slugshare/actions/workflows/ci.yml)
 # SlugShare - UCSC Dining Points Sharing App
 
 A Next.js application for sharing dining hall points at UCSC, built with NextAuth.js, Prisma, and shadcn/ui.
