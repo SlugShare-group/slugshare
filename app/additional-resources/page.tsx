@@ -21,6 +21,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import Link from "next/link";
+import { PageBackLink } from "@/components/page-back-link";
 
 //helper functions
 const getDayKey = () => {
@@ -85,19 +86,21 @@ export default function CreateRequestPage() {
   };
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-6">
-          <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-            ← Back to Dashboard
-          </Link>
-        </div>
-
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">Additional Resources</h1>
-          <p className="text-sm text-muted-foreground">
-            Explore free food pantries and community services at UCSC.
-          </p>
+    <div className="min-h-full bg-[radial-gradient(circle_at_top,#fef3c7,#f8fafc_40%)] p-8 dark:bg-[radial-gradient(circle_at_top,#1f2937,#0b1220_45%)]">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              Resources
+            </p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-foreground">
+              Additional Resources
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Explore free food pantries and community services at UCSC.
+            </p>
+          </div>
+          <PageBackLink href="/dashboard">Back to Dashboard</PageBackLink>
         </div>
 
           <div className="space-y-2">

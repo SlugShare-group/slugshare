@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validateAcceptRequest } from "@/lib/validation";
+import { sendRequestAcceptedEmail } from "@/lib/email";
 
 const QR_EXPIRY_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 
@@ -142,6 +143,19 @@ export async function POST(
           },
         }),
       ]);
+
+      // Email notification for in-person completes
+      if (request.requester.email) {
+        await sendRequestAcceptedEmail({
+          requesterEmail: request.requester.email,
+          requesterName: request.requester.name,
+          donorEmail: user.email || "",
+          donorName: user.name,
+          location: request.location,
+          pointsRequested: request.pointsRequested,
+          mode: "completed",
+        });
+      }
     } else {
       const credential = await prisma.getCredential.findUnique({
         where: { userId: user.id },
@@ -213,6 +227,19 @@ export async function POST(
           },
         }),
       ]);
+
+      // Email notification for QR accepts
+      if (request.requester.email) {
+        await sendRequestAcceptedEmail({
+          requesterEmail: request.requester.email,
+          requesterName: request.requester.name,
+          donorEmail: user.email || "",
+          donorName: user.name,
+          location: request.location,
+          pointsRequested: request.pointsRequested,
+          mode: "qr_code",
+        });
+      }
     }
 
     return NextResponse.json({ success: true });

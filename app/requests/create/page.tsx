@@ -21,6 +21,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import Link from "next/link";
+import { PageBackLink } from "@/components/page-back-link";
 
 //helper functions
 const getDayKey = () => {
@@ -190,28 +191,39 @@ export default function CreateRequestPage() {
   };
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-full bg-[radial-gradient(circle_at_top,#fef3c7,#f8fafc_40%)] p-8 dark:bg-[radial-gradient(circle_at_top,#1f2937,#0b1220_45%)]">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-6">
-          <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-            ← Back to Dashboard
-          </Link>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              Requests
+            </p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-foreground">
+              Create Request
+            </h1>
+          </div>
+          <div className="flex gap-3">
+            <PageBackLink href="/dashboard">Back to Dashboard</PageBackLink>
+            <Button variant="outline" size="sm" asChild>
+              <a
+                href="https://nutrition.sa.ucsc.edu/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View UCSC Menus
+              </a>
+            </Button>
+          </div>
         </div>
 
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-            <CardTitle>Create Request</CardTitle>
-                        
-            <Button variant="outline" size="sm" asChild>
-            <a 
-              href="https://nutrition.sa.ucsc.edu/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-xs"
-            >
-              View UCSC Menus
-            </a>
-          </Button>          
+        <Card className="border-border bg-card/90 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/20">
+          <CardHeader className="pb-7">
+            <CardTitle className="text-2xl font-black text-foreground">
+              Choose location and details
+            </CardTitle>
+            <CardDescription>
+              Select a dining location and optional message.
+            </CardDescription>
           </CardHeader>
 
           <CardContent>

@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider"
+import { NotificationBridge } from "@/components/notification-bridge";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,8 +28,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col overflow-hidden`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -36,10 +39,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Providers>
-            <Suspense fallback={<header className="border-b bg-background h-16" />}>
-              <Navbar />
-            </Suspense>
-            <main>{children}</main>
+            <nav className="shrink-0">
+              <Suspense fallback={<header className="border-b bg-background h-16" />}>
+                <Navbar />
+              </Suspense>
+            </nav>
+            <NotificationBridge />
+            <main className="flex-1 min-h-0 overflow-auto">{children}</main>
           </Providers>
         </ThemeProvider>
       </body>
