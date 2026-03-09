@@ -17,6 +17,9 @@ model User {
   emailVerified DateTime?
   phone         String?
   image         String?
+  qrCodeExpiryMinutes Int @default(60)
+  autoPullQrEnabled Boolean @default(false)
+  autoPullQrThreshold Float?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   accounts      Account[]
@@ -145,3 +148,5 @@ model GetFulfillment {
   requester User    @relation("GetFulfillmentRequester", fields: [requesterId], references: [id], onDelete: Cascade)
   donor     User    @relation("GetFulfillmentDonor", fields: [donorId], references: [id], onDelete: Cascade)
 }
+
+

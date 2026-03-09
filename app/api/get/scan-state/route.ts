@@ -65,6 +65,7 @@ export async function GET(req: Request) {
     }
 
     const fulfillment = request.getFulfillment;
+    const now = new Date();
 
     if (fulfillment.status === "completed") {
       return Response.json(
@@ -73,6 +74,29 @@ export async function GET(req: Request) {
           completedAt: fulfillment.completedAt?.toISOString() ?? null,
           completionReason: fulfillment.completionReason,
           completionDelta: fulfillment.completionDelta,
+        },
+        { status: 200 }
+      );
+    }
+
+    if (fulfillment.status === "expired" || now >= fulfillment.expiresAt) {
+      if (fulfillment.status !== "expired") {
+        await prisma.getFulfillment.update({
+          where: { requestId: request.id },
+          data: {
+            status: "expired",
+            completionReason: "qr_expired",
+            completedAt: now,
+            lastCheckedAt: now,
+          },
+        });
+      }
+
+      return Response.json(
+        {
+          state: "unavailable",
+          reason: "expired",
+          expiresAt: fulfillment.expiresAt.toISOString(),
         },
         { status: 200 }
       );
@@ -114,8 +138,6 @@ export async function GET(req: Request) {
       );
     }
 
-    const now = new Date();
-
     if (!fulfillment.baselineAccountsJson) {
       await prisma.getFulfillment.update({
         where: { requestId: request.id },
@@ -129,6 +151,7 @@ export async function GET(req: Request) {
         {
           state: "active",
           lastCheckedAt: now.toISOString(),
+          expiresAt: fulfillment.expiresAt.toISOString(),
         },
         { status: 200 }
       );
@@ -211,6 +234,7 @@ export async function GET(req: Request) {
       {
         state: "active",
         lastCheckedAt: now.toISOString(),
+        expiresAt: fulfillment.expiresAt.toISOString(),
       },
       { status: 200 }
     );
