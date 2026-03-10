@@ -102,9 +102,9 @@ type DonationPace = "evenly" | "now" | "end";
           <p className="mb-6 text-muted-foreground">
             Plan how many points you can donate without affecting your own spending.
           </p>
-          <Card>
+          <Card className="border-border bg-card/90 shadow-xl shadow-black/5 dark:shadow-black/20">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-foreground">
                 <Calendar className="h-5 w-5" />
                 Not Currently in a Quarter
               </CardTitle>
@@ -258,9 +258,9 @@ type DonationPace = "evenly" | "now" | "end";
             {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining
           </p>
         </div>
-        <Card className="mb-6">
+        <Card className="mb-6 border-border bg-card/90 shadow-xl shadow-black/5 dark:shadow-black/20">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-foreground">
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">

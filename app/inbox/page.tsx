@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
+import { PageBackLink } from "@/components/page-back-link";
 
 interface Notification {
   id: string;
@@ -94,18 +95,24 @@ export default function InboxPage() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-full bg-[radial-gradient(circle_at_top,#fef3c7,#f8fafc_40%)] p-8 dark:bg-[radial-gradient(circle_at_top,#1f2937,#0b1220_45%)]">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Inbox</h1>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              Inbox
+            </p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-foreground">
+              Notifications
+            </h1>
             {unreadCount > 0 && (
               <p className="mt-1 text-sm text-muted-foreground">
                 {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
               </p>
             )}
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-3">
+            <PageBackLink href="/dashboard">Back to Dashboard</PageBackLink>
             {unreadCount > 0 && (
               <Button onClick={markAllAsRead} variant="outline" size="sm">
                 Mark All as Read
@@ -113,9 +120,6 @@ export default function InboxPage() {
             )}
             <Button onClick={fetchNotifications} variant="outline" disabled={isLoading}>
               Refresh
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/dashboard">Dashboard</Link>
             </Button>
           </div>
         </div>
@@ -129,7 +133,7 @@ export default function InboxPage() {
         {isLoading ? (
           <div className="text-center text-muted-foreground">Loading notifications...</div>
         ) : notifications.length === 0 ? (
-          <Card>
+          <Card className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
             <CardContent className="py-8 text-center text-muted-foreground">
               <p>No notifications yet.</p>
               <p className="mt-2 text-sm">You'll receive notifications when your requests are accepted or declined.</p>
@@ -140,7 +144,9 @@ export default function InboxPage() {
             {notifications.map((notification) => (
               <Card
                 key={notification.id}
-                className={notification.read ? "opacity-75" : "border-primary/50"}
+                className={`border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20 ${
+                  notification.read ? "opacity-75" : "border-foreground/20"
+                }`}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">

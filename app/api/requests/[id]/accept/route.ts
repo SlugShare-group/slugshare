@@ -7,6 +7,7 @@ import {
   toQrCodeExpiryMs,
 } from "@/lib/get/qr-expiry";
 import { validateAcceptRequest } from "@/lib/validation";
+import { sendRequestAcceptedEmail } from "@/lib/email";
 
 type QrExpiryRow = {
   qrCodeExpiryMinutes: number | null;
@@ -162,6 +163,19 @@ export async function POST(
           },
         }),
       ]);
+
+      // Email notification for in-person completes
+      if (request.requester.email) {
+        await sendRequestAcceptedEmail({
+          requesterEmail: request.requester.email,
+          requesterName: request.requester.name,
+          donorEmail: user.email || "",
+          donorName: user.name,
+          location: request.location,
+          pointsRequested: request.pointsRequested,
+          mode: "completed",
+        });
+      }
     } else {
       const [credential, expiryMinutes] = await Promise.all([
         prisma.getCredential.findUnique({
@@ -236,6 +250,19 @@ export async function POST(
           },
         }),
       ]);
+
+      // Email notification for QR accepts
+      if (request.requester.email) {
+        await sendRequestAcceptedEmail({
+          requesterEmail: request.requester.email,
+          requesterName: request.requester.name,
+          donorEmail: user.email || "",
+          donorName: user.name,
+          location: request.location,
+          pointsRequested: request.pointsRequested,
+          mode: "qr_code",
+        });
+      }
     }
 
     return NextResponse.json({ success: true });
