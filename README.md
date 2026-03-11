@@ -136,6 +136,68 @@ webserver/
 - **Styling:** Tailwind CSS v4
 - **TypeScript:** v5
 
+## GET Integration Diagrams
+
+### 1) GET Login / Account Linking Flow
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant FE as Frontend (GET Connect UI)
+  participant API as /api/get/connect
+  participant Parse as extractValidatedSessionId
+  participant GA as GET Adapter
+  participant DB as Prisma GetCredential
+
+  U->>FE: Paste validated GET URL/input
+  FE->>API: POST validatedInput
+  API->>Parse: Extract validated GET sessionId
+  Parse-->>API: validatedSessionId
+
+  API->>GA: generateDeviceId() + generatePin()
+  API->>GA: createPin(validatedSessionId, deviceId, pin)
+  API->>GA: authenticatePin(pin, deviceId)
+  GA-->>API: apiSessionId
+  API->>GA: verifyPin(apiSessionId, deviceId, pin)
+  API->>GA: retrieveAccounts(apiSessionId)
+
+  API->>DB: upsert deviceId + encryptedPin + linked metadata
+  API-->>FE: linked=true, status=linked
+```
+
+### 2) QR Code Generation + GET Token / Device / PIN Handling
+
+```mermaid
+sequenceDiagram
+  participant FE as Frontend (Scan / Pull QR)
+  participant API as /api/get/pull-qr or /api/get/barcode
+  participant Server as getActiveGetSessionForUser
+  participant DB as Prisma GetCredential
+  participant Crypto as decryptSecret
+  participant GA as GET Adapter
+  participant GET as External GET API
+
+  FE->>API: Request QR payload
+  API->>DB: Load linked credential (deviceId, encryptedPin)
+  DB-->>API: linked credential
+
+  API->>Server: getActiveGetSessionForUser(userId)
+  Server->>Crypto: decrypt encryptedPin -> pin
+  Server->>GA: authenticatePin(pin, deviceId)
+  GA->>GET: authenticateWithPin(...)
+  GET-->>GA: sessionId (short-lived token)
+  Server->>GA: verifyPin(sessionId, deviceId, pin)
+  Server->>DB: Update lastValidatedAt/status
+
+  API->>GA: retrieveBarcodePayload(sessionId, ...)
+  GA->>GET: barcode method with sessionId
+  GET-->>GA: barcode payload + expiry
+  API-->>FE: payload for PDF417 rendering
+
+  Note over API,DB: deviceId + encryptedPin are persisted
+  Note over API,FE: session token is obtained server-side per request and never exposed as stored client secret
+```
+
 ## Available Scripts
 
 - `npm run dev` - Start development server
