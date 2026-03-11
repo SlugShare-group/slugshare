@@ -136,36 +136,66 @@ webserver/
 - **Styling:** Tailwind CSS v4
 - **TypeScript:** v5
 
-## Architecture Diagram
+## GET Integration Diagrams
+
+### 1) GET Login / Account Linking Flow
 
 ```mermaid
-flowchart TD
-  User["User Browser"] --> UI["Next.js App Router UI"]
+sequenceDiagram
+  participant U as User
+  participant FE as Frontend (GET Connect UI)
+  participant API as /api/get/connect
+  participant Parse as extractValidatedSessionId
+  participant GA as GET Adapter
+  participant DB as Prisma GetCredential
 
-  UI --> AuthAPI["/api/auth/* (NextAuth)"]
-  UI --> UserAPI["/api/user"]
-  UI --> PointsAPI["/api/points"]
-  UI --> RequestsAPI["/api/requests"]
-  UI --> GetAPI["/api/get/*"]
-  UI --> InboxAPI["/api/notifications"]
+  U->>FE: Paste validated GET URL/input
+  FE->>API: POST validatedInput
+  API->>Parse: Extract validated GET sessionId
+  Parse-->>API: validatedSessionId
 
-  AuthAPI --> AuthCore["auth.ts + auth.config.ts"]
-  UserAPI --> AuthCore
-  PointsAPI --> AuthCore
-  RequestsAPI --> AuthCore
-  GetAPI --> AuthCore
-  InboxAPI --> AuthCore
+  API->>GA: generateDeviceId() + generatePin()
+  API->>GA: createPin(validatedSessionId, deviceId, pin)
+  API->>GA: authenticatePin(pin, deviceId)
+  GA-->>API: apiSessionId
+  API->>GA: verifyPin(apiSessionId, deviceId, pin)
+  API->>GA: retrieveAccounts(apiSessionId)
 
-  AuthCore --> PrismaClient["lib/prisma.ts"]
-  PointsAPI --> PrismaClient
-  RequestsAPI --> PrismaClient
-  UserAPI --> PrismaClient
-  InboxAPI --> PrismaClient
+  API->>DB: upsert deviceId + encryptedPin + linked metadata
+  API-->>FE: linked=true, status=linked
+```
 
-  GetAPI --> GetLib["lib/get/* Adapter Layer"]
-  GetLib --> ExternalGET["GET External Services"]
+### 2) QR Code Generation + GET Token / Device / PIN Handling
 
-  PrismaClient --> DB[("PostgreSQL + Prisma")]
+```mermaid
+sequenceDiagram
+  participant FE as Frontend (Scan / Pull QR)
+  participant API as /api/get/pull-qr or /api/get/barcode
+  participant Server as getActiveGetSessionForUser
+  participant DB as Prisma GetCredential
+  participant Crypto as decryptSecret
+  participant GA as GET Adapter
+  participant GET as External GET API
+
+  FE->>API: Request QR payload
+  API->>DB: Load linked credential (deviceId, encryptedPin)
+  DB-->>API: linked credential
+
+  API->>Server: getActiveGetSessionForUser(userId)
+  Server->>Crypto: decrypt encryptedPin -> pin
+  Server->>GA: authenticatePin(pin, deviceId)
+  GA->>GET: authenticateWithPin(...)
+  GET-->>GA: sessionId (short-lived token)
+  Server->>GA: verifyPin(sessionId, deviceId, pin)
+  Server->>DB: Update lastValidatedAt/status
+
+  API->>GA: retrieveBarcodePayload(sessionId, ...)
+  GA->>GET: barcode method with sessionId
+  GET-->>GA: barcode payload + expiry
+  API-->>FE: payload for PDF417 rendering
+
+  Note over API,DB: deviceId + encryptedPin are persisted
+  Note over API,FE: session token is obtained server-side per request and never exposed as stored client secret
 ```
 
 ## Available Scripts
