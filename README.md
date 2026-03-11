@@ -136,6 +136,38 @@ webserver/
 - **Styling:** Tailwind CSS v4
 - **TypeScript:** v5
 
+## Architecture Diagram
+
+```mermaid
+flowchart TD
+  User["User Browser"] --> UI["Next.js App Router UI"]
+
+  UI --> AuthAPI["/api/auth/* (NextAuth)"]
+  UI --> UserAPI["/api/user"]
+  UI --> PointsAPI["/api/points"]
+  UI --> RequestsAPI["/api/requests"]
+  UI --> GetAPI["/api/get/*"]
+  UI --> InboxAPI["/api/notifications"]
+
+  AuthAPI --> AuthCore["auth.ts + auth.config.ts"]
+  UserAPI --> AuthCore
+  PointsAPI --> AuthCore
+  RequestsAPI --> AuthCore
+  GetAPI --> AuthCore
+  InboxAPI --> AuthCore
+
+  AuthCore --> PrismaClient["lib/prisma.ts"]
+  PointsAPI --> PrismaClient
+  RequestsAPI --> PrismaClient
+  UserAPI --> PrismaClient
+  InboxAPI --> PrismaClient
+
+  GetAPI --> GetLib["lib/get/* Adapter Layer"]
+  GetLib --> ExternalGET["GET External Services"]
+
+  PrismaClient --> DB[("PostgreSQL + Prisma")]
+```
+
 ## Available Scripts
 
 - `npm run dev` - Start development server
