@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  DEFAULT_QR_CODE_EXPIRY_MINUTES,
+  normalizeQrCodeExpiryMinutes,
+  toQrCodeExpiryMs,
+} from "@/lib/get/qr-expiry";
 import { validateAcceptRequest } from "@/lib/validation";
 import { sendRequestAcceptedEmail } from "@/lib/email";
 
-const QR_EXPIRY_MS = 10 * 365 * 24 * 60 * 60 * 1000;
+type QrExpiryRow = {
+  qrCodeExpiryMinutes: number | null;
+};
+
+async function getQrCodeExpiryMinutes(userId: string): Promise<number> {
+  try {
+    const rows = await prisma.$queryRawUnsafe<QrExpiryRow[]>(
+      'SELECT "qrCodeExpiryMinutes" FROM "User" WHERE "id" = $1 LIMIT 1',
+      userId
+    );
+    return normalizeQrCodeExpiryMinutes(rows[0]?.qrCodeExpiryMinutes);
+  } catch (error) {
+    console.warn("Falling back to default QR expiry minutes for accept flow:", error);
+    return DEFAULT_QR_CODE_EXPIRY_MINUTES;
+  }
+}
 
 export async function POST(
   req: NextRequest,
@@ -157,9 +177,12 @@ export async function POST(
         });
       }
     } else {
-      const credential = await prisma.getCredential.findUnique({
-        where: { userId: user.id },
-      });
+      const [credential, expiryMinutes] = await Promise.all([
+        prisma.getCredential.findUnique({
+          where: { userId: user.id },
+        }),
+        getQrCodeExpiryMinutes(user.id),
+      ]);
 
       if (
         !credential ||
@@ -174,7 +197,7 @@ export async function POST(
       }
 
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + QR_EXPIRY_MS);
+      const expiresAt = new Date(now.getTime() + toQrCodeExpiryMs(expiryMinutes));
 
       await prisma.$transaction([
         prisma.request.update({

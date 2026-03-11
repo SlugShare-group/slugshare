@@ -60,12 +60,38 @@ export async function GET(req: Request) {
       return Response.json({ state: "unavailable", reason: "not_ready" }, { status: 200 });
     }
 
-    if (request.getFulfillment.status !== "active") {
+    const fulfillment = request.getFulfillment;
+    const now = new Date();
+
+    if (fulfillment.status === "expired" || now >= fulfillment.expiresAt) {
+      if (fulfillment.status !== "expired") {
+        await prisma.getFulfillment.update({
+          where: { requestId: request.id },
+          data: {
+            status: "expired",
+            completionReason: "qr_expired",
+            completedAt: now,
+            lastCheckedAt: now,
+          },
+        });
+      }
+
       return Response.json(
         {
-          state: request.getFulfillment.status === "completed" ? "completed" : "unavailable",
-          reason: request.getFulfillment.status,
-          completedAt: request.getFulfillment.completedAt?.toISOString() ?? null,
+          state: "unavailable",
+          reason: "expired",
+          expiresAt: fulfillment.expiresAt.toISOString(),
+        },
+        { status: 200 }
+      );
+    }
+
+    if (fulfillment.status !== "active") {
+      return Response.json(
+        {
+          state: fulfillment.status === "completed" ? "completed" : "unavailable",
+          reason: fulfillment.status,
+          completedAt: fulfillment.completedAt?.toISOString() ?? null,
         },
         { status: 200 }
       );
@@ -87,6 +113,7 @@ export async function GET(req: Request) {
           state: "active",
           payload,
           fetchedAt: new Date().toISOString(),
+          expiresAt: fulfillment.expiresAt.toISOString(),
         },
         { status: 200 }
       );

@@ -15,6 +15,7 @@ type ScanResponse = {
   completionReason?: string;
   completionDelta?: number;
   accountName?: string;
+  expiresAt?: string;
 };
 
 type BarcodeResponse = {
@@ -22,6 +23,7 @@ type BarcodeResponse = {
   payload?: string;
   reason?: string;
   fetchedAt?: string;
+  expiresAt?: string;
 };
 
 type ErrorEnvelope = {
@@ -44,6 +46,7 @@ export function ScanRequestClient({ requestId }: { requestId: string }) {
   const [completionReason, setCompletionReason] = useState<string | null>(null);
   const [accountName, setAccountName] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [reason, setReason] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +70,7 @@ export function ScanRequestClient({ requestId }: { requestId: string }) {
       setCompletionReason(scanData.completionReason ?? null);
       setCompletionDelta(scanData.completionDelta ?? null);
       setAccountName(scanData.accountName ?? null);
+      setExpiresAt(scanData.expiresAt ?? null);
 
       if (scanData.state !== "active") {
         setPayload(null);
@@ -88,12 +92,14 @@ export function ScanRequestClient({ requestId }: { requestId: string }) {
       if (barcodeData.state === "active" && barcodeData.payload) {
         setPayload(barcodeData.payload);
         setLastFetchedAt(barcodeData.fetchedAt ?? new Date().toISOString());
+        setExpiresAt(barcodeData.expiresAt ?? scanData.expiresAt ?? null);
       } else if (barcodeData.state === "completed") {
         setScanState("completed");
         setCompletedAt(new Date().toISOString());
       } else {
         setScanState("unavailable");
         setReason(barcodeData.reason ?? "not_available");
+        setExpiresAt(barcodeData.expiresAt ?? scanData.expiresAt ?? null);
         setPayload(null);
       }
 
@@ -142,7 +148,8 @@ export function ScanRequestClient({ requestId }: { requestId: string }) {
               />
               <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 sm:grid-cols-2">
                 <p>
-                  <span className="font-semibold">Code window:</span> Active until completed
+                  <span className="font-semibold">Code window:</span>{" "}
+                  {expiresAt ? `Until ${new Date(expiresAt).toLocaleTimeString()}` : "Active until completed"}
                 </p>
                 <p>
                   <span className="font-semibold">Last fetched:</span>{" "}
@@ -193,7 +200,7 @@ export function ScanRequestClient({ requestId }: { requestId: string }) {
           </div>
           <div className="flex items-center justify-between rounded-lg bg-slate-900 p-3">
             <span className="text-slate-400">Expiry Policy</span>
-            <span>No hard expiry</span>
+            <span>{expiresAt ? new Date(expiresAt).toLocaleString() : "Configured in GET settings"}</span>
           </div>
           <div className="flex items-center justify-between rounded-lg bg-slate-900 p-3">
             <span className="text-slate-400">Completion Reason</span>
