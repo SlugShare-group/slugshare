@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { MAX_QR_CODE_EXPIRY_MINUTES, MIN_QR_CODE_EXPIRY_MINUTES } from "@/lib/get/qr-expiry";
 
 // Shape of the GET status payload coming from /api/get/status.
 type GetStatus = {
@@ -370,48 +373,150 @@ export function GetPageClient() {
   return (
     // Two-column layout: controls on left, live status on right.
     <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
-      <Card className="border-border bg-card/90 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/20">
-        <CardHeader>
-          <CardTitle className="text-2xl font-black text-foreground">Link Donor GET Device</CardTitle>
-          <CardDescription>
-            Paste a validated GET redirect URL (or validated session id). We create a device + PIN and store it encrypted.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <label className="block text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-            Validated Link Input
-          </label>
-          <textarea
-            value={validatedInput}
-            onChange={(event) => setValidatedInput(event.target.value)}
-            placeholder="https://...validated... OR validated session UUID"
-            className="min-h-[160px] w-full rounded-xl border border-input bg-background px-4 py-3 font-mono text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
-          />
-          <div className="flex flex-wrap gap-3">
-            <Button
-              disabled={isSubmitting}
-              onClick={handleConnect}
-            >
-              {isSubmitting ? "Working..." : "Connect GET"}
-            </Button>
+      <div className="space-y-6">
+        <Card className="border-border bg-card/90 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/20">
+          <CardHeader>
+            <CardTitle className="text-2xl font-black text-foreground">Link Donor GET Device</CardTitle>
+            <CardDescription>
+              Paste a validated GET redirect URL (or validated session id). We create a device + PIN and store it encrypted.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <label className="block text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              Validated Link Input
+            </label>
+            <textarea
+              value={validatedInput}
+              onChange={(event) => setValidatedInput(event.target.value)}
+              placeholder="https://...validated... OR validated session UUID"
+              className="min-h-[160px] w-full rounded-xl border border-input bg-background px-4 py-3 font-mono text-sm text-foreground outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            <div className="flex flex-wrap gap-3">
+              <Button
+                disabled={isSubmitting}
+                onClick={handleConnect}
+              >
+                {isSubmitting ? "Working..." : "Connect GET"}
+              </Button>
+              <Button
+                variant="outline"
+                disabled={isSubmitting || !status?.linked}
+                onClick={handleDisconnect}
+              >
+                Disconnect
+              </Button>
+              <Button
+                variant="outline"
+                disabled={isSubmitting}
+                onClick={runTesting}
+              >
+                Run Diagnostics
+              </Button>
+            </div>
+            {message && <div className={`rounded-xl border px-4 py-3 text-sm ${toneClasses}`}>{message}</div>}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="text-xl font-black">QR Access Controls</CardTitle>
+            <CardDescription>Manually revoke active QR access for all open QR requests.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-3">
             <Button
               variant="outline"
-              disabled={isSubmitting || !status?.linked}
-              onClick={handleDisconnect}
+              disabled={isPulling || !status?.linked}
+              onClick={() => pullQrAccess(true)}
             >
-              Disconnect
+              {isPulling ? "Pulling..." : "Pull QR Access Now"}
             </Button>
-            <Button
-              variant="outline"
-              disabled={isSubmitting}
-              onClick={runTesting}
-            >
-              Run Diagnostics
-            </Button>
-          </div>
-          {message && <div className={`rounded-xl border px-4 py-3 text-sm ${toneClasses}`}>{message}</div>}
-        </CardContent>
-      </Card>
+            {!status?.linked && (
+              <p className="text-sm text-muted-foreground">Link a GET account to enable QR access controls.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="text-xl font-black">QR Code Time Limit</CardTitle>
+            <CardDescription>
+              Set how long QR codes remain valid before expiring. Allowed range: {MIN_QR_CODE_EXPIRY_MINUTES} to{" "}
+              {MAX_QR_CODE_EXPIRY_MINUTES} minutes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="qr-expiry-minutes">QR time limit (minutes)</Label>
+              <Input
+                id="qr-expiry-minutes"
+                type="number"
+                min={MIN_QR_CODE_EXPIRY_MINUTES}
+                max={MAX_QR_CODE_EXPIRY_MINUTES}
+                value={qrCodeExpiryMinutes}
+                onChange={(event) => setQrCodeExpiryMinutes(event.target.value)}
+                disabled={isSubmitting || !status?.linked}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                disabled={isSubmitting || !status?.linked}
+                onClick={handleSaveQrExpiry}
+              >
+                {isSubmitting ? "Saving..." : "Save Time Limit"}
+              </Button>
+              {!status?.linked && (
+                <p className="text-sm text-muted-foreground">Link a GET account to update QR time limits.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="text-xl font-black">Auto-Pull QR Access</CardTitle>
+            <CardDescription>
+              Automatically revoke QR access when the minimum balance drops below your threshold.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-input text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                checked={autoPullQrEnabled}
+                onChange={(event) => setAutoPullQrEnabled(event.target.checked)}
+                disabled={isSubmitting || !status?.linked}
+              />
+              <span className="text-sm font-medium text-foreground">Enable auto-pull</span>
+            </label>
+            <div className="space-y-2">
+              <Label htmlFor="auto-pull-threshold">Balance threshold (minimum)</Label>
+              <Input
+                id="auto-pull-threshold"
+                type="number"
+                min={0}
+                value={autoPullQrThreshold}
+                onChange={(event) => setAutoPullQrThreshold(event.target.value)}
+                disabled={isSubmitting || !status?.linked}
+              />
+              <p className="text-xs text-muted-foreground">
+                Leave blank to disable auto-pull, or set a number to auto-revoke when balance dips below it.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                disabled={isSubmitting || !status?.linked}
+                onClick={handleSaveAutoPull}
+              >
+                {isSubmitting ? "Saving..." : "Save Auto-Pull Settings"}
+              </Button>
+              {!status?.linked && (
+                <p className="text-sm text-muted-foreground">Link a GET account to enable auto-pull.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="border-border bg-card text-card-foreground shadow-xl">
         <CardHeader>
