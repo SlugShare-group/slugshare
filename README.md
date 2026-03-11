@@ -136,6 +136,106 @@ webserver/
 - **Styling:** Tailwind CSS v4
 - **TypeScript:** v5
 
+## Architecture Diagram
+
+```mermaid
+flowchart TD
+  User["User Browser"] --> UI["Next.js App Router UI"]
+
+  UI --> AuthAPI["/api/auth/* (NextAuth)"]
+  UI --> UserAPI["/api/user"]
+  UI --> PointsAPI["/api/points"]
+  UI --> RequestsAPI["/api/requests"]
+  UI --> GetAPI["/api/get/*"]
+  UI --> InboxAPI["/api/notifications"]
+
+  AuthAPI --> AuthCore["auth.ts + auth.config.ts"]
+  UserAPI --> AuthCore
+  PointsAPI --> AuthCore
+  RequestsAPI --> AuthCore
+  GetAPI --> AuthCore
+  InboxAPI --> AuthCore
+
+  AuthCore --> PrismaClient["lib/prisma.ts"]
+  PointsAPI --> PrismaClient
+  RequestsAPI --> PrismaClient
+  UserAPI --> PrismaClient
+  InboxAPI --> PrismaClient
+
+  GetAPI --> GetLib["lib/get/* Adapter Layer"]
+  GetLib --> ExternalGET["GET External Services"]
+
+  PrismaClient --> DB[("PostgreSQL + Prisma")]
+```
+
+## GET Workflow Diagrams
+
+### 1) Account Linking
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant FE as Frontend
+  participant API
+  participant GET as GET Service
+  participant Store as Credential Store
+
+  User->>FE: Submit validated URL/token
+  FE->>API: Connect request
+  API->>API: Extract session identifier
+  API->>GET: create device credentials
+  API->>GET: authenticate with device+PIN
+  API->>Store: Save encrypted device+PIN
+  API-->>FE: Connected
+```
+
+### 2) Barcode Refresh
+
+```mermaid
+sequenceDiagram
+  participant FE as Frontend
+  participant API
+  participant Cache as Session Cache
+  participant GET as GET Service
+
+  loop Every N seconds
+    FE->>API: fetch barcode payload
+    API->>Cache: read session
+    alt cache miss/expired
+      API->>GET: authenticate
+      API->>Cache: write session
+    end
+    API->>GET: retrieve barcode payload
+    API-->>FE: payload + timestamps
+    FE->>FE: render PDF417
+  end
+```
+
+### 3) Fulfillment Completion
+
+```mermaid
+sequenceDiagram
+  participant FE as Requester Scan Page
+  participant API
+  participant GET as GET Service
+  participant DB as App DB
+
+  FE->>API: poll scan-state
+  API->>DB: load request and baseline balance
+  alt baseline missing
+    API->>GET: retrieve current account balance
+    API->>DB: save baseline balance
+  end
+  API->>GET: retrieve current account balance
+  alt current < baseline
+    API->>DB: mark request completed
+    API-->>FE: completed state
+  else no drop
+    API->>GET: retrieve current barcode payload
+    API-->>FE: active state + payload
+  end
+```
+
 ## Available Scripts
 
 - `npm run dev` - Start development server
