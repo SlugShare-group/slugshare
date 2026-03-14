@@ -19,12 +19,72 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input"; //used for entering the maximum donation amount
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
-import { PageBackLink } from "@/components/page-back-link"; 
-import { UCSC_LOCATIONS_DATA } from "@/lib/locations"; //all available dining locations
+import { ChevronDown, Check } from "lucide-react";
+import { PageBackLink } from "@/components/page-back-link";
+import { UCSC_LOCATIONS_DATA, DINING_HALL_PRICES } from "@/lib/locations"; //all available dining locations
+
+// Helper functions for location open/close status
+const getDayKey = () => {
+  const days = ["sun", "mon", "tues", "wed", "thurs", "fri", "sat"] as const;
+  return days[new Date().getDay()];
+};
+
+const getMealPeriod = () => {
+  const now = new Date();
+  const time = now.getHours() + now.getMinutes() / 60;
+  if (time >= 7 && time < 11) return "breakfast";
+  if (time >= 11.5 && time < 14) return "lunch";
+  if (time >= 17 && time < 20) return "dinner";
+  if (time >= 20 && time < 23) return "lateNight";
+  return "continuousDining";
+};
+
+const isCurrentlyOpen = (schedule: any) => {
+  if (!schedule) return false;
+  const dayKey = getDayKey();
+  const today = schedule[dayKey];
+  if (!today) return false;
+  const now = new Date();
+  const currentTime = now.getHours() * 100 + now.getMinutes();
+  const openTime = parseInt(today.open.replace(":", ""));
+  const closeTime = parseInt(today.close.replace(":", ""));
+  return currentTime >= openTime && currentTime < closeTime;
+};
+
+type DayKey = "sun" | "mon" | "tues" | "wed" | "thurs" | "fri" | "sat";
+type OpenCloseWindow = { open: string; close: string };
+
+function isOpenCloseWindow(value: unknown): value is OpenCloseWindow {
+  return (
+      !!value &&
+      typeof value === "object" &&
+      "open" in value &&
+      "close" in value &&
+      typeof (value as OpenCloseWindow).open === "string" &&
+      typeof (value as OpenCloseWindow).close === "string"
+  );
+}
+
+function getCloseTimeFromSchedule(schedule: unknown, dayKey: DayKey): string | null {
+  if (!schedule || typeof schedule !== "object") return null;
+  const dayValue = (schedule as Record<string, unknown>)[dayKey];
+  if (!dayValue) return null;
+  if (Array.isArray(dayValue)) {
+    const lastWindow = dayValue.at(-1);
+    return isOpenCloseWindow(lastWindow) ? lastWindow.close : null;
+  }
+  if (isOpenCloseWindow(dayValue)) return dayValue.close;
+  return null;
+}
 
 interface Request {
   id: string;
@@ -65,7 +125,25 @@ export default function RequestsPage() {
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
   const [maxDonation, setMaxDonation] = useState<string>("");
 
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    location: "",
+    pointsRequested: 0,
+    message: "",
+    inPersonAllowed: true,
+    qrCodeAllowed: false,
+  });
+
+  // Hydration-safe state for location picker
+  const [isClient, setIsClient] = useState(false);
+  const [currentMeal, setCurrentMeal] = useState("lunch");
+  const [editDayKey, setEditDayKey] = useState<DayKey>("mon");
+
   useEffect(() => {
+    setIsClient(true);
+    setCurrentMeal(getMealPeriod());
+    setEditDayKey(getDayKey());
     const loadData = async () => {
       await Promise.all([fetchCurrentUser(), fetchRequests()]);
     };
@@ -109,8 +187,8 @@ export default function RequestsPage() {
   };
 
   const handleAccept = async (
-    requestId: string,
-    mode: "in_person" | "qr_code"
+      requestId: string,
+      mode: "in_person" | "qr_code"
   ) => {
     if (processingId) return;
 
@@ -239,6 +317,65 @@ export default function RequestsPage() {
   /* Page.tsx delete function ends here */
 
 
+  const handleEditClick = (request: Request) => {
+    setEditingId(request.id);
+    setEditForm({
+      location: request.location,
+      pointsRequested: request.pointsRequested,
+      message: request.message || "",
+      inPersonAllowed: request.inPersonAllowed,
+      qrCodeAllowed: request.qrCodeAllowed,
+    });
+  };
+
+  const handleEditSave = async (requestId: string) => {
+    if (processingId) return;
+    if (!editForm.inPersonAllowed && !editForm.qrCodeAllowed) {
+      alert("Please select at least one fulfillment option.");
+      return;
+    }
+    // Auto-price dining halls like the create page does
+    const locData = UCSC_LOCATIONS_DATA.find(l => l.name === editForm.location);
+    const isDiningHall = locData?.standardPricing || false;
+    const points = isDiningHall
+        ? DINING_HALL_PRICES.slugPoints[getMealPeriod() as keyof typeof DINING_HALL_PRICES.slugPoints]
+        : Number(editForm.pointsRequested);
+    try {
+      setProcessingId(requestId);
+      const response = await fetch(`/api/requests/${requestId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          location: editForm.location,
+          pointsRequested: points,
+          message: editForm.message,
+          inPersonAllowed: editForm.inPersonAllowed,
+          qrCodeAllowed: editForm.qrCodeAllowed,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.error || "Failed to edit request");
+        return;
+      }
+      setEditingId(null);
+      await fetchRequests();
+      router.refresh();
+    } catch (error) {
+      console.error("Error editing request:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // Prevent unchecking if it would leave both unchecked
+  const handleFulfillmentChange = (field: "inPersonAllowed" | "qrCodeAllowed", checked: boolean) => {
+    const otherField = field === "inPersonAllowed" ? "qrCodeAllowed" : "inPersonAllowed";
+    if (!checked && !editForm[otherField]) return;
+    setEditForm((f) => ({ ...f, [field]: checked }));
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "accepted":
@@ -254,20 +391,20 @@ export default function RequestsPage() {
 
   // Separate user's own requests from others' requests
   const myRequests = currentUserId
-    ? requests.filter((req) => req.requesterId === currentUserId)
-    : [];
+      ? requests.filter((req) => req.requesterId === currentUserId)
+      : [];
   const otherRequests = currentUserId
-    ? requests.filter((req) => req.requesterId !== currentUserId)
-    : requests;
+      ? requests.filter((req) => req.requesterId !== currentUserId)
+      : requests;
 
   // Apply location filter: if any locations selected, only show those; otherwise show all
   const locationFilter = (req: Request) =>
-    selectedLocations.size === 0 || selectedLocations.has(req.location);
+      selectedLocations.size === 0 || selectedLocations.has(req.location);
   // This converts the maxdonation input string into a number, if the input is empty it gets treated as "no limit"
   const maxDonationNum = maxDonation === "" ? null : parseInt(maxDonation, 10);
   //Checks if the max donation value is valid, so if it exists, is a number and is not negative
   const maxDonationValid =
-    maxDonationNum !== null && !Number.isNaN(maxDonationNum) && maxDonationNum >= 0;
+      maxDonationNum !== null && !Number.isNaN(maxDonationNum) && maxDonationNum >= 0;
   //Applies the locaiton filter to the current users own reuqest
   const filteredMyRequests = myRequests.filter(locationFilter);
   //applies the filters to the other users requests
@@ -328,7 +465,8 @@ export default function RequestsPage() {
           </div>
         </div>
 
-        <div className="mb-6 flex flex-wrap items-center gap-4">
+        <div className="mb-6 flex flex-wrap items-center gap-4"> {/*Page header and filter controls container*/}
+
           {/*dropdown menu that contains all filter options*/}
           <DropdownMenu>
             {/*button that opens the filter dropdown*/}
@@ -337,7 +475,7 @@ export default function RequestsPage() {
                 Filters
                 {/*indicator shown when any filter is active*/}
                 {(selectedLocations.size > 0 || maxDonation !== "") && (
-                  <span className="ml-1 size-2 rounded-full bg-primary" aria-hidden />
+                    <span className="ml-1 size-2 rounded-full bg-primary" aria-hidden />
                 )}
                 {/*arrow icon indicating dropdown*/}
                 <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
@@ -360,13 +498,13 @@ export default function RequestsPage() {
                 </DropdownMenuLabel>
                 {/*list of dining locations*/}
                 {UCSC_LOCATIONS_DATA.map((loc) => (
-                  <DropdownMenuCheckboxItem
-                    key={loc.name}
-                    checked={selectedLocations.has(loc.name)}
-                    onCheckedChange={() => toggleLocation(loc.name)}
-                  >
-                    {loc.name}
-                  </DropdownMenuCheckboxItem>
+                    <DropdownMenuCheckboxItem
+                        key={loc.name}
+                        checked={selectedLocations.has(loc.name)}
+                        onCheckedChange={() => toggleLocation(loc.name)}
+                    >
+                      {loc.name}
+                    </DropdownMenuCheckboxItem>
                 ))}
                 <DropdownMenuSeparator className="my-2" />
                 {/*max donation filter input*/}
@@ -375,295 +513,457 @@ export default function RequestsPage() {
                     Max I&apos;m willing to donate (points)
                   </Label>
                   <Input
-                    id="max-donation-dropdown"
-                    type="number"
-                    min={0}
-                    placeholder="No limit"
-                    value={maxDonation}
-                    onChange={(e) => setMaxDonation(e.target.value)}
-                    className="h-8"
-                    onClick={(e) => e.stopPropagation()}
+                      id="max-donation-dropdown"
+                      type="number"
+                      min={0}
+                      placeholder="No limit"
+                      value={maxDonation}
+                      onChange={(e) => setMaxDonation(e.target.value)}
+                      className="h-8"
+                      onClick={(e) => e.stopPropagation()}
                   />
                 </div>
               </div>
               {/*clears filters button when a filter is active*/}
               {(selectedLocations.size > 0 || maxDonation !== "") && (
-                <>
-                  <DropdownMenuSeparator />
-                  <div className="p-1">
-                    <Button variant="ghost" size="sm" className="w-full justify-center" onClick={clearFilters}>
-                      Clear filters
-                    </Button>
-                  </div>
-                </>
+                  <>
+                    <DropdownMenuSeparator />
+                    <div className="p-1">
+                      <Button variant="ghost" size="sm" className="w-full justify-center" onClick={clearFilters}>
+                        Clear filters
+                      </Button>
+                    </div>
+                  </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
         {error && (
-          <div className="mb-6 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
-            {error}
-          </div>
+            <div className="mb-6 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              {error}
+            </div>
         )}
 
         {isLoading ? (
-          <div className="text-center text-muted-foreground">Loading requests...</div>
+            <div className="text-center text-muted-foreground">Loading requests...</div>
         ) : (
-          <>
-            {/* My Requests Section */}
-            {filteredMyRequests.length > 0 && (
-              <div className="mb-8">
-                <h2 className="mb-4 text-2xl font-semibold">My Requests</h2>
-                <div className="space-y-4">
-                  {filteredMyRequests.map((request) => (
-                    <Card key={request.id} className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <CardTitle>{request.location}</CardTitle>
-                            <CardDescription>
-                              You requested {request.pointsRequested} points
-                            </CardDescription>
-                          </div>
-                          <span
-                            className={`text-sm font-medium capitalize ${getStatusColor(
-                              request.status
-                            )}`}
-                          >
-                            {request.status}
-                          </span>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div>
-                            <p className="text-2xl font-bold text-blue-600">
-                              {request.pointsRequested} points
-                            </p>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Fulfillment:{" "}
-                            <span className="font-medium">
-                              {request.inPersonAllowed && "In person"}
-                              {request.inPersonAllowed &&
-                                  request.qrCodeAllowed &&
-                                  " & "}
-                              {request.qrCodeAllowed && "QR code"}
-                            </span>
-                          </p>
-                          {request.message && (
-                            <div>
-                              <p className="text-sm text-muted-foreground">
-                                {request.message}
-                              </p>
-                            </div>
-                          )}
-
-                          {request.status === "accepted" && request.donor && (
-                            <p className="text-sm text-muted-foreground">
-                              Accepted by {request.donor.name || request.donor.email} (
-                              {request.selectedFulfillmentMode === "qr_code" ? "QR mode" : "in-person"}
-                              )
-                            </p>
-                          )}
-
-                          {request.status === "accepted" &&
-                            request.selectedFulfillmentMode === "qr_code" && (
-                              <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-                                This request is in active QR fulfillment mode.
-                                <div className="mt-2">
-                                  <Button asChild size="sm" variant="outline">
-                                    <Link href={`/requests/${request.id}/scan`}>Open Scan Screen</Link>
-                                  </Button>
+            <>
+              {/* My Requests Section */}
+              {filteredMyRequests.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="mb-4 text-2xl font-semibold">My Requests</h2>
+                    <div className="space-y-4">
+                      {filteredMyRequests.map((request) => (
+                          <Card key={request.id} className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
+                            <CardHeader>
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <CardTitle>{request.location}</CardTitle>
+                                  <CardDescription>
+                                    You requested {request.pointsRequested} points
+                                  </CardDescription>
                                 </div>
+                                <span
+                                    className={`text-sm font-medium capitalize ${getStatusColor(
+                                        request.status
+                                    )}`}
+                                >
+                                  {request.status}
+                                </span>
                               </div>
-                            )}
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-4">
+                                <div>
+                                  <p className="text-2xl font-bold text-blue-600">
+                                    {request.pointsRequested} points
+                                  </p>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  Fulfillment:{" "}
+                                  <span className="font-medium">
+                                    {request.inPersonAllowed && "In person"}
+                                    {request.inPersonAllowed &&
+                                        request.qrCodeAllowed &&
+                                        " & "}
+                                    {request.qrCodeAllowed && "QR code"}
+                                  </span>
+                                </p>
+                                {request.message && (
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">
+                                        {request.message}
+                                      </p>
+                                    </div>
+                                )}
 
-                          {request.status === "completed" && (
-                            <p className="text-sm text-muted-foreground">
-                              Completed
-                              {request.completedAt
-                                ? ` on ${new Date(request.completedAt).toLocaleString()}`
-                                : ""}
-                            </p>
-                          )}
+                                {request.status === "accepted" && request.donor && (
+                                    <p className="text-sm text-muted-foreground">
+                                      Accepted by {request.donor.name || request.donor.email} (
+                                      {request.selectedFulfillmentMode === "qr_code" ? "QR mode" : "in-person"}
+                                      )
+                                    </p>
+                                )}
 
-                          {request.status === "declined" && request.donor && (
-                            <p className="text-sm text-muted-foreground">
-                              Declined by {request.donor.name || request.donor.email}
-                            </p>
-                          )}
+                                {request.status === "accepted" &&
+                                    request.selectedFulfillmentMode === "qr_code" && (
+                                        <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                                          This request is in active QR fulfillment mode.
+                                          <div className="mt-2">
+                                            <Button asChild size="sm" variant="outline">
+                                              <Link href={`/requests/${request.id}/scan`}>Open Scan Screen</Link>
+                                            </Button>
+                                          </div>
+                                        </div>
+                                    )}
 
-                         {/* Added delete button functionality to page.tsx starts here */}
-                          {/* Allow deleting pending requests and QR-mode requests */}
-                          {(request.status === "pending" ||
-                            request.selectedFulfillmentMode === "qr_code") && (
-                            <div className="flex gap-2">
-                              {/* Delete button - calls handleDelete when clicked */}
-                              <Button
-                                onClick={() => handleDelete(request.id)} // When clicked call handleDelete with this request's ID
-                                disabled={processingId === request.id} // Disable button while deleting to stop double clicks
-                                variant="destructive" // red button
-                                size="sm" // Small button size
-                              >
-                                {/* Show "Deleting..." while processing otherwise show "Delete" */}
-                                {processingId === request.id ? "Deleting..." : "Delete"}
-                              </Button>
-                            </div>
-                          )}
-                         {/* Added delete button functionality to page.tsx ends here */}
-                          <p className="text-xs text-muted-foreground">
-                            Created {new Date(request.createdAt).toLocaleString()}
-                          </p>
-                        </div>
+                                {request.status === "completed" && (
+                                    <p className="text-sm text-muted-foreground">
+                                      Completed
+                                      {request.completedAt
+                                          ? ` on ${new Date(request.completedAt).toLocaleString()}`
+                                          : ""}
+                                    </p>
+                                )}
+
+                                {request.status === "declined" && request.donor && (
+                                    <p className="text-sm text-muted-foreground">
+                                      Declined by {request.donor.name || request.donor.email}
+                                    </p>
+                                )}
+
+                                {/* Edit and Delete buttons for pending requests */}
+                                {request.status === "pending" && (
+                                    <div className="flex flex-col gap-2">
+                                      {editingId === request.id ? (
+                                          <div className="flex flex-col gap-4 rounded-md border p-4 mt-1">
+                                            {/* Location accordion picker */}
+                                            <div className="space-y-2">
+                                              <Label>Location</Label>
+                                              {editForm.location && (
+                                                  <div className="text-sm font-medium text-green-600 flex items-center gap-1 bg-green-50 p-2 rounded-md border border-green-200">
+                                                    <Check className="h-4 w-4" /> Selected: {editForm.location}
+                                                    {(() => {
+                                                      const locData = UCSC_LOCATIONS_DATA.find(l => l.name === editForm.location);
+                                                      if (locData?.standardPricing) {
+                                                        return (
+                                                            <span className="ml-auto font-bold">
+                                                              Cost: ${DINING_HALL_PRICES.slugPoints[currentMeal as keyof typeof DINING_HALL_PRICES.slugPoints]}
+                                                            </span>
+                                                        );
+                                                      }
+                                                    })()}
+                                                  </div>
+                                              )}
+                                              <Accordion type="single" collapsible className="w-full border rounded-md px-4">
+                                                {["Dining Halls", "Markets", "Perks Coffee Bar", "Cafes and Restaurants"].map((category) => (
+                                                    <AccordionItem key={category} value={category} className="border-b-0">
+                                                      <AccordionTrigger className="text-sm hover:no-underline py-3">
+                                                        {category}
+                                                      </AccordionTrigger>
+                                                      <AccordionContent>
+                                                        <div className="grid grid-cols-1 gap-2 pb-2">
+                                                          {isClient && UCSC_LOCATIONS_DATA
+                                                              .filter((loc) => loc.category === category)
+                                                              .map((loc) => ({
+                                                                ...loc,
+                                                                isOpen: isCurrentlyOpen(loc.schedule),
+                                                              }))
+                                                              .sort((a, b) => Number(b.isOpen) - Number(a.isOpen))
+                                                              .map((item) => {
+                                                                const price = item.standardPricing
+                                                                    ? DINING_HALL_PRICES.slugPoints[currentMeal as keyof typeof DINING_HALL_PRICES.slugPoints]
+                                                                    : null;
+                                                                const closeTime = getCloseTimeFromSchedule(item.schedule, editDayKey);
+                                                                return (
+                                                                    <button
+                                                                        key={item.name}
+                                                                        type="button"
+                                                                        disabled={!item.isOpen}
+                                                                        onClick={() => setEditForm((f) => ({ ...f, location: item.name }))}
+                                                                        className={`flex items-center justify-between p-3 text-sm rounded-md transition-all border ${
+                                                                            !item.isOpen
+                                                                                ? "opacity-50 bg-muted cursor-not-allowed border-transparent"
+                                                                                : editForm.location === item.name
+                                                                                    ? "bg-primary text-primary-foreground border-primary font-medium"
+                                                                                    : "hover:bg-accent border-transparent"
+                                                                        }`}
+                                                                    >
+                                                                      <div className="flex flex-col text-left">
+                                                                        <span className="font-semibold">{item.name}</span>
+                                                                        <span className="text-[10px] flex items-center gap-1">
+                                                                          {!item.isOpen ? "Currently Closed" : `Open until ${closeTime ?? "end of service"}`}
+                                                                        </span>
+                                                                      </div>
+                                                                      {price && item.isOpen && (
+                                                                          <div className="text-right flex flex-col items-end">
+                                                                            <span className="text-[9px] uppercase font-bold text-muted-foreground">{currentMeal}</span>
+                                                                            <span className="font-mono font-bold">${price}</span>
+                                                                          </div>
+                                                                      )}
+                                                                    </button>
+                                                                );
+                                                              })}
+                                                        </div>
+                                                      </AccordionContent>
+                                                    </AccordionItem>
+                                                ))}
+                                              </Accordion>
+                                            </div>
+
+                                            {/* Points - hidden for dining halls (auto-priced) */}
+                                            {!UCSC_LOCATIONS_DATA.find(l => l.name === editForm.location)?.standardPricing && (
+                                                <div className="space-y-2">
+                                                  <Label>Points Requested</Label>
+                                                  <Input
+                                                      type="number"
+                                                      min="1"
+                                                      step="1"
+                                                      value={editForm.pointsRequested}
+                                                      onChange={(e) => setEditForm((f) => ({ ...f, pointsRequested: parseInt(e.target.value) || 0 }))}
+                                                  />
+                                                </div>
+                                            )}
+
+                                            {/* Message */}
+                                            <div className="space-y-2">
+                                              <Label>Message (optional)</Label>
+                                              <textarea
+                                                  className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                                                  value={editForm.message}
+                                                  onChange={(e) => setEditForm((f) => ({ ...f, message: e.target.value }))}
+                                              />
+                                            </div>
+
+                                            {/* Fulfillment - at least one must stay checked */}
+                                            <div className="space-y-2">
+                                              <Label>How can this request be fulfilled?</Label>
+                                              <div className="flex flex-col gap-2 text-sm">
+                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                  <input
+                                                      type="checkbox"
+                                                      checked={editForm.inPersonAllowed}
+                                                      onChange={(e) => handleFulfillmentChange("inPersonAllowed", e.target.checked)}
+                                                  />
+                                                  Meet in person
+                                                </label>
+                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                  <input
+                                                      type="checkbox"
+                                                      checked={editForm.qrCodeAllowed}
+                                                      onChange={(e) => handleFulfillmentChange("qrCodeAllowed", e.target.checked)}
+                                                  />
+                                                  Receive QR code
+                                                </label>
+                                              </div>
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                              <Button onClick={() => handleEditSave(request.id)} disabled={processingId === request.id} size="sm">
+                                                {processingId === request.id ? "Saving..." : "Save"}
+                                              </Button>
+                                              <Button onClick={() => setEditingId(null)} disabled={processingId === request.id} variant="outline" size="sm">
+                                                Cancel
+                                              </Button>
+                                            </div>
+                                          </div>
+                                      ) : (
+                                          <div className="flex gap-2">
+                                            <Button
+                                                onClick={() => handleEditClick(request)}
+                                                disabled={processingId === request.id}
+                                                variant="outline"
+                                                size="sm"
+                                            >
+                                              Edit
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleDelete(request.id)}
+                                                disabled={processingId === request.id}
+                                                variant="destructive"
+                                                size="sm"
+                                            >
+                                              {processingId === request.id ? "Deleting..." : "Delete"}
+                                            </Button>
+                                          </div>
+                                      )}
+                                    </div>
+                                )}
+                                {/* Allow deleting QR-mode accepted requests */}
+                                {request.status !== "pending" && request.selectedFulfillmentMode === "qr_code" && (
+                                    <div className="flex gap-2">
+                                      <Button
+                                          onClick={() => handleDelete(request.id)}
+                                          disabled={processingId === request.id}
+                                          variant="destructive"
+                                          size="sm"
+                                      >
+                                        {processingId === request.id ? "Deleting..." : "Delete"}
+                                      </Button>
+                                    </div>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  Created {new Date(request.createdAt).toLocaleString()}
+                                </p>
+                                {new Date(request.updatedAt).getTime() - new Date(request.createdAt).getTime() > 5000 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Edited {new Date(request.updatedAt).toLocaleString()}
+                                    </p>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                      ))}
+                    </div>
+                  </div>
+              )}
+
+              {/* Other Requests Section */}
+              <div>
+                <h2 className="mb-4 text-2xl font-semibold">
+                  {myRequests.length > 0 ? "Other Requests" : "All Requests"}
+                </h2>
+                {filteredOtherRequests.length === 0 ? (
+                    <Card className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
+                      <CardContent className="py-8 text-center text-muted-foreground">
+                        <p>No requests available. Be the first to create one!</p>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
+                ) : (
+                    <div className="space-y-4">
+                      {filteredOtherRequests.map((request) => (
+                          <Card key={request.id} className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
+                            <CardHeader>
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <CardTitle>{request.location}</CardTitle>
+                                  <CardDescription>
+                                    Requested by {request.requester.name || request.requester.email}
+                                  </CardDescription>
+                                </div>
+                                <span
+                                    className={`text-sm font-medium capitalize ${getStatusColor(
+                                        request.status
+                                    )}`}
+                                >
+                                  {request.status}
+                                </span>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-4">
+                                <div>
+                                  <p className="text-2xl font-bold text-blue-600">
+                                    {request.pointsRequested} points
+                                  </p>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  Fulfillment:{" "}
+                                  <span className="font-medium">
+                                    {request.inPersonAllowed && "In person"}
+                                    {request.inPersonAllowed &&
+                                        request.qrCodeAllowed &&
+                                        " & "}
+                                    {request.qrCodeAllowed && "QR code"}
+                                  </span>
+                                </p>
+                                {request.message && (
+                                    <div>
+                                      <p className="text-sm text-muted-foreground">
+                                        {request.message}
+                                      </p>
+                                    </div>
+                                )}
+
+                                {request.status === "pending" && (
+                                    <div className="flex gap-2">
+                                      <Button
+                                          onClick={() => handleAcceptClick(request)}
+                                          disabled={processingId === request.id}
+                                          size="sm"
+                                      >
+                                        {processingId === request.id ? "Processing..." : "Accept"}
+                                      </Button>
+                                      <Button
+                                          onClick={() => handleDecline(request.id)}
+                                          disabled={processingId === request.id}
+                                          variant="outline"
+                                          size="sm"
+                                      >
+                                        Decline
+                                      </Button>
+                                    </div>
+                                )}
+
+                                {request.status === "accepted" && request.donor && (
+                                    <p className="text-sm text-muted-foreground">
+                                      Accepted by {request.donor.name || request.donor.email} (
+                                      {request.selectedFulfillmentMode === "qr_code" ? "QR mode" : "in-person"})
+                                    </p>
+                                )}
+
+                                {request.status === "completed" && request.donor && (
+                                    <p className="text-sm text-muted-foreground">
+                                      Completed by {request.donor.name || request.donor.email}
+                                    </p>
+                                )}
+
+                                <p className="text-xs text-muted-foreground">
+                                  Created {new Date(request.createdAt).toLocaleString()}
+                                </p>
+                                {new Date(request.updatedAt).getTime() - new Date(request.createdAt).getTime() > 5000 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Edited {new Date(request.updatedAt).toLocaleString()}
+                                    </p>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                      ))}
+                    </div>
+                )}
               </div>
-            )}
-
-            {/* Other Requests Section */}
-            <div>
-              <h2 className="mb-4 text-2xl font-semibold">
-                {myRequests.length > 0 ? "Other Requests" : "All Requests"}
-              </h2>
-              {filteredOtherRequests.length === 0 ? (
-                <Card className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
-                  <CardContent className="py-8 text-center text-muted-foreground">
-                    <p>No requests available. Be the first to create one!</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {filteredOtherRequests.map((request) => (
-              <Card key={request.id} className="border-border bg-card/90 shadow-lg shadow-black/5 dark:shadow-black/20">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle>{request.location}</CardTitle>
-                      <CardDescription>
-                        Requested by {request.requester.name || request.requester.email}
-                      </CardDescription>
-                    </div>
-                    <span
-                      className={`text-sm font-medium capitalize ${getStatusColor(
-                        request.status
-                      )}`}
-                    >
-                      {request.status}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-2xl font-bold text-blue-600">
-                        {request.pointsRequested} points
-                      </p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Fulfillment:{" "}
-                      <span className="font-medium">
-                              {request.inPersonAllowed && "In person"}
-                        {request.inPersonAllowed &&
-                            request.qrCodeAllowed &&
-                            " & "}
-                        {request.qrCodeAllowed && "QR code"}
-                            </span>
-                    </p>
-                    {request.message && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          {request.message}
-                        </p>
-                      </div>
-                    )}
-
-                    {request.status === "pending" && (
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleAcceptClick(request)}
-                          disabled={processingId === request.id}
-                          size="sm"
-                        >
-                          {processingId === request.id ? "Processing..." : "Accept"}
-                        </Button>
-                        <Button
-                          onClick={() => handleDecline(request.id)}
-                          disabled={processingId === request.id}
-                          variant="outline"
-                          size="sm"
-                        >
-                          Decline
-                        </Button>
-                      </div>
-                    )}
-
-                    {request.status === "accepted" && request.donor && (
-                      <p className="text-sm text-muted-foreground">
-                        Accepted by {request.donor.name || request.donor.email} (
-                        {request.selectedFulfillmentMode === "qr_code" ? "QR mode" : "in-person"})
-                      </p>
-                    )}
-
-                    {request.status === "completed" && request.donor && (
-                      <p className="text-sm text-muted-foreground">
-                        Completed by {request.donor.name || request.donor.email}
-                      </p>
-                    )}
-
-                    <p className="text-xs text-muted-foreground">
-                      Created {new Date(request.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
+            </>
         )}
       </div>
       {acceptModeRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
-          <Card className="w-full max-w-md border-2 border-border bg-card shadow-xl">
-            <CardHeader>
-              <CardTitle>Choose Fulfillment Mode</CardTitle>
-              <CardDescription>
-                Pick how you want to fulfill {acceptModeRequest.requester.name || acceptModeRequest.requester.email}
-                &apos;s request at {acceptModeRequest.location}.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                className="w-full justify-start"
-                onClick={() => handleAccept(acceptModeRequest.id, "in_person")}
-                disabled={processingId === acceptModeRequest.id}
-              >
-                Meet In Person (instant transfer)
-              </Button>
-              <Button
-                className="w-full justify-start"
-                variant="outline"
-                onClick={() => handleAccept(acceptModeRequest.id, "qr_code")}
-                disabled={processingId === acceptModeRequest.id}
-              >
-                QR Code Flow (balance-drop completion)
-              </Button>
-              <Button
-                className="w-full"
-                variant="ghost"
-                onClick={() => setAcceptModeRequest(null)}
-                disabled={processingId === acceptModeRequest.id}
-              >
-                Cancel
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+            <Card className="w-full max-w-md border-2 border-border bg-card shadow-xl">
+              <CardHeader>
+                <CardTitle>Choose Fulfillment Mode</CardTitle>
+                <CardDescription>
+                  Pick how you want to fulfill {acceptModeRequest.requester.name || acceptModeRequest.requester.email}
+                  &apos;s request at {acceptModeRequest.location}.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                    className="w-full justify-start"
+                    onClick={() => handleAccept(acceptModeRequest.id, "in_person")}
+                    disabled={processingId === acceptModeRequest.id}
+                >
+                  Meet In Person (instant transfer)
+                </Button>
+                <Button
+                    className="w-full justify-start"
+                    variant="outline"
+                    onClick={() => handleAccept(acceptModeRequest.id, "qr_code")}
+                    disabled={processingId === acceptModeRequest.id}
+                >
+                  QR Code Flow (balance-drop completion)
+                </Button>
+                <Button
+                    className="w-full"
+                    variant="ghost"
+                    onClick={() => setAcceptModeRequest(null)}
+                    disabled={processingId === acceptModeRequest.id}
+                >
+                  Cancel
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
       )}
     </div>
   );
