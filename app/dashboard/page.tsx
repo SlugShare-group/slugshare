@@ -1,18 +1,15 @@
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { signOut } from "@/auth";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { UpdatePointsForm } from "@/components/UpdatePointsForm";
+import { GetBalanceCard } from "@/components/get-balance-card";
+import {
+  FilePlus2,
+  List,
+  Calculator,
+  BookOpen,
+  Plug,
+} from "lucide-react";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -21,68 +18,83 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
-  // Verify user exists in database
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
   });
 
   if (!dbUser) {
-    // User has a stale JWT but doesn't exist in DB — sign out to clear the token
-    await signOut({ redirectTo: "/auth/login" });
+    redirect("/auth/logout-stale");
   }
 
-  // Get or create points record
-  const points = await prisma.points.upsert({
-    where: { userId: user.id },
-    update: {},
-    create: {
-      userId: user.id,
-      balance: 0,
+  const actions = [
+    {
+      href: "/requests/create",
+      title: "Create Request",
+      description: "Request dining points at a location",
+      icon: FilePlus2,
     },
-  });
+    {
+      href: "/requests",
+      title: "View All Requests",
+      description: "Browse and accept or decline requests",
+      icon: List,
+    },
+    {
+      href: "/donation-calculator",
+      title: "Donation Calculator",
+      description: "See how much you can donate",
+      icon: Calculator,
+    },
+    {
+      href: "/additional-resources",
+      title: "Additional Resources",
+      description: "Food pantries and community services",
+      icon: BookOpen,
+    },
+    {
+      href: "/get",
+      title: "GET Integration",
+      description: "Link and monitor your GET session",
+      icon: Plug,
+    },
+  ] as const;
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-full bg-[radial-gradient(circle_at_top,#fef3c7,#f8fafc_40%)] p-8 dark:bg-[radial-gradient(circle_at_top,#1f2937,#0b1220_45%)]">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-        </div>     
+        <header className="mb-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+            Dashboard
+          </p>
+          <h1 className="mt-2 text-4xl font-black tracking-tight text-foreground">
+            Welcome back
+          </h1>
+        </header>
 
-        <div className="mb-6 grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Points Balance</CardTitle>
-              <CardDescription>Current dining points available</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-4xl font-bold text-blue-600">{points.balance}</p>
-              <UpdatePointsForm currentBalance={points.balance} />
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="flex gap-4 space-y-4">
-          <Button asChild>
-            <Link href="/requests/create">Create Request</Link>
-          </Button>
+        <section className="mb-10">
+          <GetBalanceCard />
+        </section>
 
-          <Button asChild variant="outline">
-            <Link href="/requests">View All Requests</Link>
-          </Button>
-
-          <Button asChild variant="outline">
-            <Link href="/donation-calculator">Donation Calculator</Link>
-          </Button>
-          
-          <Button asChild variant="outline">
-            <Link href="/additional-resources">Additional Resources</Link>
-          </Button>
-
-          <Button asChild variant="outline">
-            <Link href="/get">GET Integration</Link>
-          </Button>
-
-        </div>   
+        <section>
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            Quick actions
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {actions.map(({ href, title, description, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group flex flex-col rounded-2xl border border-border bg-card/90 p-5 shadow-lg shadow-black/5 backdrop-blur transition hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-xl dark:shadow-black/20"
+              >
+                <Icon className="mb-3 h-8 w-8 text-muted-foreground" />
+                <h2 className="text-lg font-bold text-foreground group-hover:text-foreground/80">
+                  {title}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -16,7 +16,7 @@ export default async function ScanRequestPage({
   const { id } = await params;
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_10%_10%,_#dbeafe,_transparent_35%),radial-gradient(circle_at_90%_0%,_#fef3c7,_transparent_30%),#f8fafc] p-8">
+    <div className="min-h-full bg-[radial-gradient(circle_at_10%_10%,#dbeafe,transparent_35%),radial-gradient(circle_at_90%_0%,#fef3c7,transparent_30%),#f8fafc] p-8 dark:bg-[radial-gradient(circle_at_10%_10%,#1e3a8a,transparent_35%),radial-gradient(circle_at_90%_0%,#1f2937,transparent_30%),#0b1220]">
       <div className="mx-auto max-w-4xl">
         <div className="mb-6 flex items-center justify-between">
           <div>
