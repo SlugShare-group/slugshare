@@ -32,24 +32,13 @@ const getDayKey = () => {
 const getMealPeriod = () => {
   const now = new Date();
   const time = now.getHours() + now.getMinutes() / 60;
-  
-  if (time >= 7 && time < 11){ //7AM-2PM
-    return 'breakfast';
-  }
-  
-  if (time >= 11.5 && time < 14){ //11:30AM-2PM
-    return 'lunch';
-  }
-  
-  if (time >= 17 && time < 20){ //5PM-8PM
-    return 'dinner';
-  }
 
-  if (time >= 20  && time < 23){ //8PM-11PM
-    return 'lateNight';
-  }
-
-  return 'continuousDining';
+  if (time >= 7 && time < 11)   return 'breakfast'; // 7:00–11:00 AM
+  if (time >= 11 && time < 14)  return 'lunch';     // 11:00 AM–2:00 PM (covers 11–11:30 gap)
+  if (time >= 14 && time < 17)  return 'dinner';    // 2:00–5:00 PM (show upcoming dinner price)
+  if (time >= 17 && time < 20)  return 'dinner';    // 5:00–8:00 PM
+  if (time >= 20 && time < 24)  return 'lateNight'; // 8:00 PM–midnight
+  return 'breakfast';                                // midnight–7 AM (dining halls closed anyway)
 };
 
 const isCurrentlyOpen = (schedule: any) => {
