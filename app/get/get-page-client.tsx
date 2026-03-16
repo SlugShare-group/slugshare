@@ -55,13 +55,9 @@ export function GetPageClient() {
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"ok" | "error">("ok");
 
-  // Optional diagnostics panel payload.
-  const [testingData, setTestingData] = useState<Record<string, unknown> | null>(null);
-
   // Pull-access result metadata (shown on the right status card).
   const [pullReason, setPullReason] = useState<string | null>(null);
   const [pullBalance, setPullBalance] = useState<number | null>(null);
-  const [pullCheckedAt, setPullCheckedAt] = useState<string | null>(null);
   const [pullRevokedCount, setPullRevokedCount] = useState<number>(0);
 
   // Refresh status from server and sync form fields to saved values.
@@ -121,7 +117,6 @@ export function GetPageClient() {
       // Update right-panel telemetry.
       setPullReason(data.reason ?? null);
       setPullBalance(typeof data.currentMinBalance === "number" ? data.currentMinBalance : null);
-      setPullCheckedAt(data.pulledAt ?? data.checkedAt ?? new Date().toISOString());
       setPullRevokedCount(typeof data.revokedCount === "number" ? data.revokedCount : 0);
 
       // User-facing banner text differs for manual vs auto actions.
@@ -201,7 +196,7 @@ export function GetPageClient() {
     }
   };
 
-  // Disconnect GET account and clear diagnostics panel.
+  // Disconnect GET account.
   const handleDisconnect = async () => {
     setIsSubmitting(true);
     try {
@@ -216,7 +211,6 @@ export function GetPageClient() {
 
       setMessage("GET account disconnected.");
       setMessageTone("ok");
-      setTestingData(null);
       await refreshStatus();
     } catch {
       setMessage("Failed to disconnect GET account");
@@ -330,30 +324,6 @@ export function GetPageClient() {
     }
   };
 
-  // Run diagnostics endpoint and show raw snapshot.
-  const runTesting = async () => {
-    setIsSubmitting(true);
-    try {
-      const response = await fetch("/api/get/testing", { cache: "no-store" });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(data?.error?.message || "Testing endpoint unavailable");
-        setMessageTone("error");
-        return;
-      }
-
-      setTestingData(data);
-      setMessage("Diagnostics loaded.");
-      setMessageTone("ok");
-    } catch {
-      setMessage("Failed to run diagnostics");
-      setMessageTone("error");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   // Shared style classes for success/error feedback banner.
   const toneClasses =
     messageTone === "ok"
@@ -405,12 +375,14 @@ export function GetPageClient() {
               >
                 Disconnect
               </Button>
-              <Button
-                variant="outline"
-                disabled={isSubmitting}
-                onClick={runTesting}
-              >
-                Run Diagnostics
+              <Button asChild variant="outline">
+                <a
+                  href="https://get.cbord.com/ucsc/full/login.php?mobileapp=1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Get Login Link
+                </a>
               </Button>
             </div>
             {message && <div className={`rounded-xl border px-4 py-3 text-sm ${toneClasses}`}>{message}</div>}
@@ -595,21 +567,6 @@ export function GetPageClient() {
           )}
         </CardContent>
       </Card>
-
-      {/* Optional diagnostics JSON card */}
-      {testingData && (
-        <Card className="border-border lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Diagnostics Snapshot</CardTitle>
-            <CardDescription>Redacted output from /api/get/testing</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <pre className="overflow-x-auto rounded-xl border border-border bg-background/60 p-4 text-xs text-foreground">
-              {JSON.stringify(testingData, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
