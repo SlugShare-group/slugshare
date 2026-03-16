@@ -107,7 +107,7 @@ export default function CreateRequestPage() {
             <Accordion type="single" collapsible className="w-full border rounded-md px-4">
               {["Services", "Food Pantries"].map((category) => (
                 <AccordionItem key={category} value={category} className="border-b-0">
-                  <AccordionTrigger className="text-sm hover:no-underline py-3">
+                  <AccordionTrigger className="text-lg font-bold hover:no-underline py-3">
                     {category}
                   </AccordionTrigger>
                   <AccordionContent>
@@ -142,7 +142,7 @@ export default function CreateRequestPage() {
                                         `Open at ${item.schedule[dayKey].displayLocation} until ${item.schedule[dayKey].close}`
                                       )
                                     ) : item.category === "Services" ? (
-                                      // Priority 2: General Services
+                                      // Priority 2: General Services                                      
                                       "Available Online"
                                     ) : (
                                       // Priority 3: Standard Food Pantries

@@ -544,4 +544,23 @@ export const UCSC_LOCATIONS_DATA = [
     standardPricing: false,
   },
 
+  {
+    name: "SUA/SOAR Basic Needs Corner",
+    category: "Food Pantries",
+    siteURL: "https://getinvolved.ucsc.edu/leadership/sua/",
+    location: "SUA Office, 2nd Floor Student Union",
+    mapURL: "https://maps.app.goo.gl/6crcMHj8VFiKeike8",
+    description: "The Student Union Assembly (SUA) is the official undergraduate student government at UC Santa Cruz, representing over 17,000 students at the campus, local, state, and federal levels.",
+    schedule: {
+      mon: { open: "10:00", close: "17:00" },
+      tues: { open: "10:00", close: "17:00" },
+      wed: { open: "10:00", close: "17:00" },
+      thurs: { open: "10:00", close: "17:00" },
+      fri: { open: "10:00", close: "17:00" },
+      sat: null,
+      sun: null,
+    },
+    standardPricing: false,
+  }
+
 ] as const;

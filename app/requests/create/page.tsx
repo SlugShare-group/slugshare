@@ -217,10 +217,12 @@ export default function CreateRequestPage() {
         </div>
 
         <Card className="border-border bg-card/90 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/20">
+          
           <CardHeader className="pb-7">
             <CardTitle className="text-2xl font-black text-foreground">
               Choose location and details
             </CardTitle>
+            
             <CardDescription>
               Select a dining location and optional message.
             </CardDescription>
@@ -235,7 +237,7 @@ export default function CreateRequestPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location" className="text-xl">Location:</Label>
                 {location && (
                   <div className="text-sm font-medium text-green-600 flex items-center gap-1 bg-green-50 p-2 rounded-md border border-green-200">
                     <Check className="h-4 w-4" /> Selected: {location}
@@ -250,7 +252,7 @@ export default function CreateRequestPage() {
                 <Accordion type="single" collapsible className="w-full border rounded-md px-4">
                   {["Dining Halls", "Markets", "Perks Coffee Bar", "Cafes and Restaurants"].map((category) => (
                     <AccordionItem key={category} value={category} className="border-b-0">
-                      <AccordionTrigger className="text-sm hover:no-underline py-3">
+                      <AccordionTrigger className="text-sm font-bold hover:no-underline py-3">
                         {category}
                       </AccordionTrigger>
                       <AccordionContent>
@@ -285,13 +287,14 @@ export default function CreateRequestPage() {
                                   <div className="flex flex-col text-left">
                                     <span className="font-semibold">{item.name}</span>
                                     <span className="text-[10px] flex items-center gap-1">
-                                      {!item.isOpen ? "Currently Closed" : `Open until ${closeTime ?? "end of service"}`}
+                                      <Clock className="h-3 w-3" />
+                                      {!item.isOpen ? "Closed" : `Open until ${closeTime ?? "end of service"}`}
                                     </span>
                                   </div>
                                   {price && item.isOpen && (
                                     <div className="text-right flex flex-col items-end">
                                       <span className="text-[9px] uppercase font-bold text-muted-foreground">{currentMeal}</span>
-                                      <span className="font-mono font-bold">${price}</span>
+                                      <span className="font-mono font-bold">${price.toFixed(2)}</span>
                                     </div>
                                   )}
                                 </button>
