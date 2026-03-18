@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-//Import dropdown functionality to use for fitler apply function
+//Import dropdown functionality to use for fitler apply function =FS=
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -19,18 +19,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+//=FE=
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Input } from "@/components/ui/input"; //used for entering the maximum donation amount
+import { Input } from "@/components/ui/input"; //used for entering the maximum donation amount F
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react"; //Just an arrow for the filter button F
 import { PageBackLink } from "@/components/page-back-link";
-import { UCSC_LOCATIONS_DATA, DINING_HALL_PRICES } from "@/lib/locations"; //all available dining locations
+import { UCSC_LOCATIONS_DATA, DINING_HALL_PRICES } from "@/lib/locations"; //all available dining locations F
 
 // Helper functions for location open/close status
 const getDayKey = () => {
@@ -121,9 +122,10 @@ export default function RequestsPage() {
   const [error, setError] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [acceptModeRequest, setAcceptModeRequest] = useState<Request | null>(null);
-  // filters requests based on locations and max amount willing to donate
-  const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
-  const [maxDonation, setMaxDonation] = useState<string>("");
+  // filters requests based on locations and max amount willing to donate =FS=
+  const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set()); //stores which dining hall locations the user has selected in the dropdown
+  const [maxDonation, setMaxDonation] = useState<string>(""); //stores value user typed in, initially store it as empty
+  // =FE=
 
   // Edit state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -396,8 +398,8 @@ export default function RequestsPage() {
   const otherRequests = currentUserId
       ? requests.filter((req) => req.requesterId !== currentUserId)
       : requests;
-
-  // Apply location filter: if any locations selected, only show those; otherwise show all
+    
+  // Apply location filter: if any locations selected, only show those; otherwise show all =FS===
   const locationFilter = (req: Request) =>
       selectedLocations.size === 0 || selectedLocations.has(req.location);
   // This converts the maxdonation input string into a number, if the input is empty it gets treated as "no limit"
@@ -433,6 +435,7 @@ export default function RequestsPage() {
     setSelectedLocations(new Set()); //reset selected locations
     setMaxDonation(""); //reset max don
   };
+  // =FE====
 
   // Debug logging
   console.log("Debug info:", {
@@ -465,7 +468,7 @@ export default function RequestsPage() {
           </div>
         </div>
 
-        <div className="mb-6 flex flex-wrap items-center gap-4"> {/*Page header and filter controls container*/}
+        <div className="mb-6 flex flex-wrap items-center gap-4"> {/*Page header and filter controls container =FS==*/}
 
           {/*dropdown menu that contains all filter options*/}
           <DropdownMenu>
@@ -538,6 +541,8 @@ export default function RequestsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        {/*=FE=*/}
+
 
         {error && (
             <div className="mb-6 rounded-md bg-destructive/15 p-3 text-sm text-destructive">

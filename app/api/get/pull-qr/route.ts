@@ -1,14 +1,15 @@
-import { getCurrentUser } from "@/lib/auth";
-import { retrieveAccounts } from "@/lib/get/adapter";
-import { getErrorResponse } from "@/lib/get/response";
+import { getCurrentUser } from "@/lib/auth"; //identify current user
+import { retrieveAccounts } from "@/lib/get/adapter"; //fetch account balances from external GET system
+import { getErrorResponse } from "@/lib/get/response"; //error responses
+//Helper for managing GET credentials and sessions
 import {
   getActiveGetSessionForUser,
   getLinkedCredentialForUser,
   markCredentialInvalid,
   shouldInvalidateCredential,
 } from "@/lib/get/server";
-import { prisma } from "@/lib/prisma";
-
+import { prisma } from "@/lib/prisma"; //For database access 
+//type describing user settings pulled from DB
 type SettingsRow = {
   autoPullQrEnabled: boolean | null;
   autoPullQrThreshold: number | null;
@@ -17,6 +18,7 @@ type SettingsRow = {
 // Pull the donor's auto-pull settings from DB.
 async function getAutoPullSettings(userId: string) {
   try {
+    //SQL query to get settings from user table
     const rows = await prisma.$queryRawUnsafe<SettingsRow[]>(
       'SELECT "autoPullQrEnabled", "autoPullQrThreshold" FROM "User" WHERE "id" = $1 LIMIT 1',
       userId
@@ -24,6 +26,7 @@ async function getAutoPullSettings(userId: string) {
 
     const row = rows[0];
     return {
+      //Ensure value is a valid boolean, otherwise defualt to false
       autoPullQrEnabled: typeof row?.autoPullQrEnabled === "boolean" ? row.autoPullQrEnabled : false,
       autoPullQrThreshold:
         typeof row?.autoPullQrThreshold === "number" && Number.isFinite(row.autoPullQrThreshold)
@@ -31,7 +34,7 @@ async function getAutoPullSettings(userId: string) {
           : null,
     };
   } catch {
-    // If settings cannot be read, use safe defaults (auto disabled).
+    // If settings cannot be read, use safe defaults (auto disabled)
     return {
       autoPullQrEnabled: false,
       autoPullQrThreshold: null,
@@ -39,7 +42,7 @@ async function getAutoPullSettings(userId: string) {
   }
 }
 
-// Convert account balances into one trigger value: minimum balance.
+// Convert account balances into one trigger value: minimum balance. 
 function minNumericBalance(accounts: { balance: unknown }[]): number | null {
   const numeric = accounts
     .map((account) =>
@@ -52,16 +55,17 @@ function minNumericBalance(accounts: { balance: unknown }[]): number | null {
   // Return null when no valid numeric balances are available.
   return numeric.length > 0 ? Math.min(...numeric) : null;
 }
-
+//Main API
 export async function GET(req: Request) {
   try {
     // 1) Validate user session.
     const user = await getCurrentUser();
+    //if user is not logged in
     if (!user?.id) {
       return getErrorResponse("authentication_error", "Unauthorized", 401, false);
     }
 
-    // 2) Donor must have an active GET link before access can be managed.
+    // 2) Donor must have an active GET link before access can be managed, so user must have linked their get account
     const credential = await getLinkedCredentialForUser(user.id);
     if (!credential) {
       return getErrorResponse("validation_error", "Link GET before managing QR access", 400, false);
@@ -73,18 +77,23 @@ export async function GET(req: Request) {
 
     try {
       // 3) Fetch current account balances from GET.
+      // get actice session for GEt
       const { sessionId } = await getActiveGetSessionForUser(user.id);
+      //Fetch account balance
       const accounts = await retrieveAccounts(sessionId);
 
       // 4) Evaluate threshold condition for auto mode.
       const currentMinBalance = minNumericBalance(accounts);
+      //Check is user is below their saftey threshold
       const thresholdMet =
         settings.autoPullQrThreshold !== null &&
         currentMinBalance !== null &&
         currentMinBalance <= settings.autoPullQrThreshold;
 
       // Manual button always pulls; auto mode only pulls when both enabled and threshold met.
+      // So decide whether to remove QR code access, always revoke is manaully trigger , otherwise only if automode is enabled and threshold is met
       const shouldPullAccess = force || (settings.autoPullQrEnabled && thresholdMet);
+      //If we should not revoke access then return status
       if (!shouldPullAccess) {
         return Response.json({
           pulled: false,

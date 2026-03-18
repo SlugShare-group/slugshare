@@ -62,8 +62,10 @@ export async function GET(req: Request) {
 
     const fulfillment = request.getFulfillment;
     const now = new Date();
-
+    // Expiration Handling ----------
+    //If qr code is expired
     if (fulfillment.status === "expired" || now >= fulfillment.expiresAt) {
+      //update  datebase if not already expired
       if (fulfillment.status !== "expired") {
         await prisma.getFulfillment.update({
           where: { requestId: request.id },
@@ -75,7 +77,7 @@ export async function GET(req: Request) {
           },
         });
       }
-
+      // Return expired state
       return Response.json(
         {
           state: "unavailable",
@@ -85,7 +87,7 @@ export async function GET(req: Request) {
         { status: 200 }
       );
     }
-
+    // If fulfillment is not active
     if (fulfillment.status !== "active") {
       return Response.json(
         {
