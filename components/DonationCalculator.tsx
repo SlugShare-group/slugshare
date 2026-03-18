@@ -132,7 +132,7 @@ type DonationPace = "evenly" | "now" | "end";
     }
 
     // calculator logic
-
+    //convert user input into num
     const avgSpendingNum =
       avgDailySpending === ""
         ? null
@@ -168,10 +168,12 @@ type DonationPace = "evenly" | "now" | "end";
       dailyDonatable !== null &&
       daysRemaining > 0
         ? Array.from({ length: daysRemaining + 1 }, (_, day) => {
+            //balance if the user does not donate 
             const withoutDonating = Math.max(
               0,
               balance - avgSpendingNum! * day
             );
+            // balance if the user does donate depending on the pace chosen
             let withDonating: number;
             switch (donationPace) {
               case "evenly":
@@ -378,43 +380,51 @@ type DonationPace = "evenly" | "now" | "end";
                     </h4>
                     <div className="h-[280px] w-full">
                       <ResponsiveContainer width="100%" height="100%">
+                        {/* Main chart component takes in computed data */}
                         <LineChart
-                          data={chartData}
-                          margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                          data={chartData} //array of our computed data
+                          margin={{ top: 5, right: 5, left: 0, bottom: 5 }} //chart spacing
                         >
+                          {/* Background grid lines, easier to read on*/}
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                           <XAxis
-                            dataKey="label"
+                            dataKey="label" // uses label field from chartData so  "Day 1", "End" 
+                            //style for axis text
                             tick={{ fontSize: 12 }}
                             tickLine={false}
+                            //control how many labels are shown, less crowing
                             interval={
                               daysRemaining > 30
                                 ? Math.floor(daysRemaining / 10)
                                 : daysRemaining > 14
                                   ? 2
-                                  : 0
+                                  : 0 //show all if small rnage
                             }
                           />
                           <YAxis
                             tick={{ fontSize: 12 }}
                             tickLine={false}
+                            // Formats values adds "pts" later in tooltip instead
                             tickFormatter={(v) => `${v}`}
                           />
+                          {/* Tooltip shows exact values when hovering over the graph */}
                           <Tooltip
                             contentStyle={{
                               backgroundColor: "hsl(var(--card))",
                               border: "1px solid hsl(var(--border))",
                               borderRadius: "var(--radius)",
                             }}
+                            // Formats tooltip text "200 pts"
                             formatter={(value, name) => [`${value ?? 0} pts`, name]}
                           />
+                          {/* which line is which */}
                           <Legend />
                           <Line
-                            type="monotone"
-                            dataKey="withoutDonating"
-                            stroke="hsl(217, 91%, 60%)"
+                            type="monotone" //smooth curve
+                            dataKey="withoutDonating" //uses field from chart data
+                            stroke="hsl(217, 91%, 60%)" //blue line
                             strokeWidth={2}
-                            dot={false}
+                            dot={false} //removes dots at each point
                             name="Without donating"
                           />
                           <Line

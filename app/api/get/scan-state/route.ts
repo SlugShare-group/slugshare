@@ -79,8 +79,11 @@ export async function GET(req: Request) {
       );
     }
 
+    //Checks if qr code is expired, so either marked as expired or the current time has passed expiration
     if (fulfillment.status === "expired" || now >= fulfillment.expiresAt) {
+      //If just expired then update database
       if (fulfillment.status !== "expired") {
+        //Marks qr code expired, records why it ended, saves when it expired, updates last checked time So officailly closes out the qr code in the system
         await prisma.getFulfillment.update({
           where: { requestId: request.id },
           data: {
@@ -91,7 +94,7 @@ export async function GET(req: Request) {
           },
         });
       }
-
+      //Return the response to the frontend
       return Response.json(
         {
           state: "unavailable",
