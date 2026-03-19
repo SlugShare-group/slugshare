@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
+    "demo:screenshots": "node scripts/demo_screenshots.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -35,6 +36,7 @@
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.51.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
