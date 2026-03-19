@@ -9,6 +9,7 @@ import {
   Calculator,
   BookOpen,
   Plug,
+  ShieldCheck,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -20,13 +21,15 @@ export default async function DashboardPage() {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
+    select: { id: true, isAdmin: true },
   });
 
   if (!dbUser) {
     redirect("/auth/logout-stale");
   }
 
-  const actions = [
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const actions: { href: string; title: string; description: string; icon: any }[] = [
     {
       href: "/requests/create",
       title: "Create Request",
@@ -57,7 +60,16 @@ export default async function DashboardPage() {
       description: "Link and monitor your GET session",
       icon: Plug,
     },
-  ] as const;
+  ];
+
+  if (dbUser?.isAdmin) {
+    actions.push({
+      href: "/admin",
+      title: "Admin Panel",
+      description: "Monitor all system requests",
+      icon: ShieldCheck,
+    });
+  }
 
   return (
     <div className="min-h-full bg-[radial-gradient(circle_at_top,#fef3c7,#f8fafc_40%)] p-8 dark:bg-[radial-gradient(circle_at_top,#1f2937,#0b1220_45%)]">
