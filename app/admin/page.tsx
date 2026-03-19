@@ -95,7 +95,7 @@ export default function AdminPage() {
         <div className="min-h-full bg-[radial-gradient(circle_at_top,#fef3c7,#f8fafc_40%)] p-8 dark:bg-[radial-gradient(circle_at_top,#1f2937,#0b1220_45%)]">
           <div className="mx-auto max-w-5xl">
             <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-              ← Back to Dashboard
+               Back to Dashboard
             </Link>
             <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
               {error === "Forbidden" ? "You do not have admin access." : error}
