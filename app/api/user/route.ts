@@ -34,9 +34,19 @@ export async function PATCH(req: Request) {
 
     const { phone } = await req.json();
 
+    const normalizedPhone = String(phone ?? "").replace(/[^\d]/g, "");
+    if (normalizedPhone.length !== 10) {
+      return NextResponse.json(
+        { error: "Invalid phone number. Please use 10 digits." },
+        { status: 400 }
+      );
+    }
+
+    const formattedPhone = `(${normalizedPhone.slice(0, 3)}) ${normalizedPhone.slice(3, 6)}-${normalizedPhone.slice(6, 10)}`;
+
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
-      data: { phone },
+      data: { phone: formattedPhone },
     });
 
     return NextResponse.json(updatedUser);
